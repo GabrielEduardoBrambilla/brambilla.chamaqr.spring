@@ -10,8 +10,8 @@ import java.util.Optional;
 
 @Repository
 public interface AlunoRepository extends JpaRepository<Aluno, Long> {
-    Optional<Aluno> FindByRa(Long ra);
-    List<Aluno> FindByUltimoIpAcesso(Long ra);
-    boolean existsByRa(Long ra);
+    Optional<Aluno> findByRa(Long ra);
+    List<Aluno> findByUltimoIpAcesso(Long ultimoIpAcesso);
 
+    boolean existsByRa(Long ra);
 }
