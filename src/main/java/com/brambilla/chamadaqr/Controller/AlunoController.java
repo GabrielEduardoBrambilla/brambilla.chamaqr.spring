@@ -34,9 +34,6 @@ public class AlunoController {
             return ResponseEntity.badRequest().body("RA já existe meu amigo. Fala com a secretaria que deu caquinha.");
         }
 
-        if (aluno.getSenha() == null || aluno.getSenha().length() < 6) {
-            return ResponseEntity.badRequest().body("Senha tem q ter pelo menos 6 characters");
-        }
 
         return ResponseEntity.ok(alunoService.saveAluno(aluno));
     }

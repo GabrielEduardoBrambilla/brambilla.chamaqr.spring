@@ -1,19 +1,26 @@
 package com.brambilla.chamadaqr.Service;
 
 import com.brambilla.chamadaqr.Entity.Aluno;
+import com.brambilla.chamadaqr.Entity.Turma;
 import com.brambilla.chamadaqr.Repository.AlunoRepository;
+import com.brambilla.chamadaqr.Repository.TurmaRepository;
 import jakarta.transaction.Transactional;
 import jakarta.validation.ValidationException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class AlunoService {
     @Autowired
     private AlunoRepository alunoRepository;
+
+    @Autowired
+    private TurmaRepository turmaRepository;
 
     public List<Aluno> getAllAlunos() {
         return alunoRepository.findAll();
@@ -25,6 +32,12 @@ public class AlunoService {
 
     @Transactional
     public Aluno saveAluno(Aluno aluno) {
+        if (aluno.getTurmas() != null) {
+            List<Turma> turmas = aluno.getTurmas().stream()
+                    .map(t -> turmaRepository.findById(t.getId()).orElseThrow(() -> new RuntimeException("Turma not found")))
+                    .collect(Collectors.toList());
+            aluno.setTurmas(turmas);
+        }
         validateAluno(aluno);
         return alunoRepository.save(aluno);
     }
