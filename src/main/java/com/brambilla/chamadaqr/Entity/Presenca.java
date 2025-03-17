@@ -1,6 +1,7 @@
 package com.brambilla.chamadaqr.Entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Entity
@@ -18,7 +19,7 @@ public class Presenca {
     @ManyToOne
     @JoinColumn(name = "id_chamada", nullable = false)
     private Chamada chamada;
-
+    @NotNull(message = "A presença é obrigatoria")
     private Boolean presente;
 }
 

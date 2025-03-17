@@ -32,6 +32,14 @@ public class TurmaService {
     public Optional<Turma> getTurmaById(Long id) {
         return turmaRepository.findById(id);
     }
+    public List<Turma> getTurmasByCurso(String curso) {
+        return turmaRepository.findByCurso(curso);
+    }
+
+    public List<Turma> getTurmasByQtdAlunos(Long qtdAlunos) {
+        return turmaRepository.findByQtdAlunos(qtdAlunos);
+    }
+
 
     @Transactional
     public Turma saveTurma(Turma turma) {

@@ -28,4 +28,12 @@ public class ProfessorService {
     public void deleteProfessor(Long id) {
         professorRepository.deleteById(id);
     }
+
+    public Optional<Professor> getProfessorByNome(String nome) {
+        return professorRepository.findByNome(nome);
+    }
+
+    public Optional<Professor> getProfessorByEmail(String email) {
+        return professorRepository.findByEmail(email);
+    }
 }

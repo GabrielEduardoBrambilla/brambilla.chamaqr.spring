@@ -28,4 +28,13 @@ public class QrcodeService {
     public void deleteQRCode(Long id) {
         qrCodeRepository.deleteById(id);
     }
+
+    public List<Qrcode> getQRCodeByCreatedAt(String createdAt) {
+        return qrCodeRepository.findByCreatedAt(createdAt);
+    }
+
+    public Optional<Qrcode> getQRCodeByHash(String hash) {
+        return qrCodeRepository.findByHash(hash);
+    }
+
 }

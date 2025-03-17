@@ -1,41 +1,80 @@
 package com.brambilla.chamadaqr.Controller;
 
-import com.brambilla.chamadaqr.Entity.Aluno;
 import com.brambilla.chamadaqr.Entity.Chamada;
-import com.brambilla.chamadaqr.Service.AlunoService;
 import com.brambilla.chamadaqr.Service.ChamadaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/chamadas")
 public class ChamadaController {
+
     @Autowired
     private ChamadaService chamadaService;
 
     @GetMapping
     public ResponseEntity<List<Chamada>> getAllChamadas() {
-        return ResponseEntity.ok(chamadaService.getAllChamadas());
+        try {
+            List<Chamada> chamadas = chamadaService.getAllChamadas();
+            return ResponseEntity.ok(chamadas);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Chamada> getChamadaById(@PathVariable Long id) {
-        return chamadaService.getChamadaById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        try {
+            Optional<Chamada> chamada = chamadaService.getChamadaById(id);
+            return chamada.map(ResponseEntity::ok)
+                    .orElseGet(() -> ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    @GetMapping("/qtd/{qtdQrs}")
+    public ResponseEntity<?> getChamadasByQtdQrs(@PathVariable Long qtdQrs) {
+        try {
+            List<Chamada> chamadas = chamadaService.getChamadasByQtdQrs(qtdQrs);
+            return chamadas.isEmpty() ? ResponseEntity.status(404).body("Nenhuma chamada encontrada.") : ResponseEntity.ok(chamadas);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Erro ao buscar chamadas.");
+        }
     }
 
+    @GetMapping("/last-month")
+    public ResponseEntity<?> getChamadasFromLastMonth() {
+        try {
+            List<Chamada> chamadas = chamadaService.getChamadasFromLastMonth();
+            return chamadas.isEmpty() ? ResponseEntity.status(404).body("Nenhuma chamada do último mês encontrada.") : ResponseEntity.ok(chamadas);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Erro ao buscar chamadas do último mês.");
+        }
+    }
     @PostMapping
-    public ResponseEntity<Chamada> createChamada(@RequestBody Chamada chamada) {
-        return ResponseEntity.ok(chamadaService.saveChamada(chamada));
+    public ResponseEntity<?> createChamada(@RequestBody Chamada chamada) {
+        try {
+            if (chamada == null) {
+                return ResponseEntity.badRequest().body("Os dados da chamada são inválidos.");
+            }
+            Chamada novaChamada = chamadaService.saveChamada(chamada);
+            return ResponseEntity.ok(novaChamada);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Erro ao criar chamada.");
+        }
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteChamada(@PathVariable Long id) {
-        chamadaService.deleteChamada(id);
-        return ResponseEntity.noContent().build();
+        try {
+            chamadaService.deleteChamada(id);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 }

@@ -32,11 +32,11 @@ public class AlunoService {
 
     @Transactional
     public Aluno saveAluno(Aluno aluno) {
-        if (aluno.getTurmas() != null) {
-            List<Turma> turmas = aluno.getTurmas().stream()
+        if (aluno.getTurma() != null) {
+            List<Turma> turmas = aluno.getTurma().stream()
                     .map(t -> turmaRepository.findById(t.getId()).orElseThrow(() -> new RuntimeException("Turma not found")))
                     .collect(Collectors.toList());
-            aluno.setTurmas(turmas);
+            aluno.setTurma(turmas);
         }
         validateAluno(aluno);
         return alunoRepository.save(aluno);
@@ -60,6 +60,15 @@ public class AlunoService {
         }
     }
 
+    public boolean existAluno(Long ra){
+        return alunoRepository.existsByRa(ra);
+    }
+
+    public List<Aluno> findByAlertLevel(Integer nivel){
+        List<Aluno> alunoRetornado = alunoRepository.findByAlertLevel(nivel);
+
+        return alunoRetornado;
+    }
 
     public boolean existsByRa(Long ra) {
         return alunoRepository.existsByRa(ra);
