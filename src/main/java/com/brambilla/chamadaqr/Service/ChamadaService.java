@@ -28,6 +28,10 @@ public class ChamadaService {
         return chamadaRepository.findChamadasFromLastMonth(startOfLastMonth, startOfThisMonth);
     }
 
+    public List<Chamada> findChamadasByTurmaId(Long id) {
+        return chamadaRepository.findByTurma_Id(id);
+    }
+
     public Optional<Chamada> getChamadaById(Long id) {
         return chamadaRepository.findById(id);
     }

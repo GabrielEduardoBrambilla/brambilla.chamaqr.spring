@@ -11,108 +11,98 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/professores")
+@CrossOrigin(origins = "*")
 public class ProfessorController {
 
     @Autowired
     private ProfessorService professorService;
 
-    @GetMapping
+    @GetMapping("/findAll")
     public ResponseEntity<?> getAllProfessores() {
-        try {
-            List<Professor> professores = professorService.getAllProfessores();
-            return ResponseEntity.ok(professores);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Erro ao buscar professores.");
-        }
+
+        List<Professor> professores = professorService.getAllProfessores();
+        return ResponseEntity.ok(professores);
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("findById/{id}")
     public ResponseEntity<?> getProfessorById(@PathVariable Long id) {
-        try {
-            Optional<Professor> professor = professorService.getProfessorById(id);
-            if(professor.isEmpty()){
-                return ResponseEntity.status(404).body("Professor não encontrado.");
-            }
-            return ResponseEntity.ok(professor);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Erro ao buscar professor.");
+
+        Optional<Professor> professor = professorService.getProfessorById(id);
+        if (professor.isEmpty()) {
+            return ResponseEntity.status(404).body("Professor não encontrado.");
         }
+        return ResponseEntity.ok(professor);
     }
 
     @GetMapping("/nome/{nome}")
     public ResponseEntity<?> getProfessorByNome(@PathVariable String nome) {
-        try {
-            Optional<Professor> professor = professorService.getProfessorByNome(nome);
-            if(professor.isEmpty()){
-                return ResponseEntity.status(404).body("Professor não encontrado pelo nome.");
-            }
-            return ResponseEntity.ok(professor);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Erro ao buscar professor pelo nome.");
+
+        Optional<Professor> professor = professorService.getProfessorByNome(nome);
+        if (professor.isEmpty()) {
+            return ResponseEntity.status(404).body("Professor não encontrado pelo nome.");
         }
+        return ResponseEntity.ok(professor);
     }
 
     // 🔍 Get professor by Email
     @GetMapping("/email/{email}")
     public ResponseEntity<?> getProfessorByEmail(@PathVariable String email) {
-        try {
-            Optional<Professor> professor = professorService.getProfessorByEmail(email);
-            if(professor.isEmpty()){
-                return ResponseEntity.status(404).body("Professor não encontrado pelo email.");
-            }
-            return ResponseEntity.ok(professor);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Erro ao buscar professor pelo email.");
+
+        Optional<Professor> professor = professorService.getProfessorByEmail(email);
+        if (professor.isEmpty()) {
+            return ResponseEntity.status(404).body("Professor não encontrado pelo email.");
         }
+        return ResponseEntity.ok(professor);
     }
 
 
-    @PostMapping
-    public ResponseEntity<?> createProfessor(@RequestBody Professor professor) {
-        try {
-            if (professor == null || professor.getNome() == null || professor.getEmail() == null || professor.getSenha() == null) {
-                return ResponseEntity.badRequest().body("Dados do professor são inválidos.");
-            }
+    @PutMapping("/update/{id}")
+    public ResponseEntity<?> updateProfessor(@RequestBody Professor professor, @PathVariable Long id) {
 
-            Professor savedProfessor = professorService.saveProfessor(professor);
-            return ResponseEntity.ok(savedProfessor);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Erro ao criar professor.");
+        Optional<Professor> p = professorService.getProfessorById(id);
+        if(p.isEmpty()){
+            return ResponseEntity.status(404).body("Professor não encontrado.");
         }
+        Professor savedProfessor = professorService.saveProfessor(professor);
+        return ResponseEntity.ok(savedProfessor);
+    }
+    @PostMapping("/save")
+    public ResponseEntity<?> createProfessor(@RequestBody Professor professor) {
+
+        if (professor == null || professor.getNome() == null || professor.getEmail() == null || professor.getSenha() == null) {
+            return ResponseEntity.badRequest().body("Dados do professor são inválidos.");
+        }
+
+        Professor savedProfessor = professorService.saveProfessor(professor);
+        return ResponseEntity.ok(savedProfessor);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateProfessor(@PathVariable Long id, @RequestBody Professor professorDetails) {
-        try {
-            Optional<Professor> existingProfessor = professorService.getProfessorById(id);
 
-            if (existingProfessor.isPresent()) {
-                Professor professor = existingProfessor.get();
-                professor.setNome(professorDetails.getNome());
-                professor.setEmail(professorDetails.getEmail());
-                professor.setSenha(professorDetails.getSenha());
+        Optional<Professor> existingProfessor = professorService.getProfessorById(id);
 
-                Professor updatedProfessor = professorService.saveProfessor(professor);
-                return ResponseEntity.ok(updatedProfessor);
-            } else {
-                return ResponseEntity.status(404).body("Professor não encontrado.");
-            }
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Erro ao atualizar professor.");
+        if (existingProfessor.isPresent()) {
+            Professor professor = existingProfessor.get();
+            professor.setNome(professorDetails.getNome());
+            professor.setEmail(professorDetails.getEmail());
+            professor.setSenha(professorDetails.getSenha());
+
+            Professor updatedProfessor = professorService.saveProfessor(professor);
+            return ResponseEntity.ok(updatedProfessor);
+        } else {
+            return ResponseEntity.status(404).body("Professor não encontrado.");
         }
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/deleteById/{id}")
     public ResponseEntity<?> deleteProfessor(@PathVariable Long id) {
-        try {
-            if (professorService.getProfessorById(id).isPresent()) {
-                professorService.deleteProfessor(id);
-                return ResponseEntity.noContent().build();
-            } else {
-                return ResponseEntity.status(404).body("Professor não encontrado.");
-            }
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Erro ao deletar professor.");
+
+        if (professorService.getProfessorById(id).isPresent()) {
+            professorService.deleteProfessor(id);
+            return ResponseEntity.noContent().build();
+        } else {
+            return ResponseEntity.status(404).body("Professor não encontrado.");
         }
     }
 }

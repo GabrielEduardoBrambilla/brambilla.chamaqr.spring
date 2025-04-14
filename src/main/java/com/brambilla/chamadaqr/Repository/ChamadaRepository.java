@@ -21,4 +21,5 @@ public interface ChamadaRepository extends JpaRepository<Chamada, Long> {
             @Param("startOfLastMonth") LocalDateTime startOfLastMonth,
             @Param("startOfThisMonth") LocalDateTime startOfThisMonth
     );
+    List<Chamada> findByTurma_Id(Long turmaId);
 }

@@ -12,80 +12,58 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/alunos")
+@CrossOrigin(origins = "*")
 public class AlunoController {
 
     @Autowired
     private AlunoService alunoService;
 
-    @GetMapping
+    @GetMapping("/findAll")
     public ResponseEntity<?> getAllAlunos() {
-        try {
-            List<Aluno> alunos = alunoService.getAllAlunos();
-            return ResponseEntity.ok(alunos);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Erro ao buscar alunos.");
-        }
+        List<Aluno> alunos = alunoService.getAllAlunos();
+        return ResponseEntity.ok(alunos);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getAlunoById(@PathVariable Long id) {
-        try {
-            Optional<Aluno> aluno = alunoService.getAlunoById(id);
-            if (aluno.isEmpty()) {
-                return ResponseEntity.badRequest().body("Aluno não encontrado.");
-            }
-            return ResponseEntity.ok(aluno);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Erro ao buscar aluno.");
+        Optional<Aluno> aluno = alunoService.getAlunoById(id);
+        if (aluno.isEmpty()) {
+            return ResponseEntity.badRequest().body("Aluno não encontrado.");
         }
+        return ResponseEntity.ok(aluno);
     }
 
     @GetMapping("/ByNivelAlerta")
     public ResponseEntity<?> findByAlertLevel(@RequestBody Integer nivel){
-        try {
-            List<Aluno> aluno = alunoService.findByAlertLevel(nivel);
+        List<Aluno> aluno = alunoService.findByAlertLevel(nivel);
 
-            return ResponseEntity.ok(aluno);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Erro ao buscar por nivel de alerta.");
-        }
+        return ResponseEntity.ok(aluno);
     }
     @GetMapping("/exist/{id}")
     public ResponseEntity<?> findByAlertLevel(@RequestParam Long ra){
-        try {
-            boolean aluno = alunoService.existAluno(ra);
+        // Verifica se o aluno existe
+        boolean aluno = alunoService.existAluno(ra);
 
-            if(aluno){
-                return ResponseEntity.ok(aluno);
-            }
-
-            return (ResponseEntity<?>) ResponseEntity.notFound();
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Erro ao buscar por aluno.");
+        if(aluno){
+            return ResponseEntity.ok(aluno);
         }
+
+        return (ResponseEntity<?>) ResponseEntity.notFound();
     }
 
-    @PostMapping
+    @PostMapping("/save")
     public ResponseEntity<?> createAluno(@RequestBody Aluno aluno) {
-        try {
-            if (alunoService.existsByRa(aluno.getRa())) {
-                return ResponseEntity.badRequest().body("RA já existe meu amigo. Fala com a secretaria que deu caquinha.");
-            }
-            Aluno novoAluno = alunoService.saveAluno(aluno);
-            return ResponseEntity.ok(novoAluno);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Erro ao criar aluno.");
+        if (alunoService.existsByRa(aluno.getRa())) {
+            return ResponseEntity.badRequest().body("RA já existe meu amigo. Fala com a secretaria que deu caquinha.");
         }
+        Aluno novoAluno = alunoService.saveAluno(aluno);
+        return ResponseEntity.ok(novoAluno);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteAluno(@PathVariable Long id) {
-        try {
             alunoService.deleteAluno(id);
             return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Erro ao deletar aluno.");
-        }
     }
 
 

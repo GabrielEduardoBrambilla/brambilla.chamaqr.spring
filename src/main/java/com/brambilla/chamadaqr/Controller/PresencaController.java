@@ -11,6 +11,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/presenca")
+@CrossOrigin(origins = "*")
 public class PresencaController {
 
     @Autowired
@@ -30,33 +31,24 @@ public class PresencaController {
 
     @GetMapping("/aluno/{ra}")
     public ResponseEntity<?> getPresencasByAluno(@PathVariable Long ra) {
-        try {
-            List<Presenca> presencas = presencaService.getPresencasByAlunoRa(ra);
-            return presencas.isEmpty() ? ResponseEntity.status(404).body("Nenhuma presença encontrada para este RA.") : ResponseEntity.ok(presencas);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Erro ao buscar presenças do aluno.");
-        }
+
+        List<Presenca> presencas = presencaService.getPresencasByAlunoRa(ra);
+        return presencas.isEmpty() ? ResponseEntity.status(404).body("Nenhuma presença encontrada para este RA.") : ResponseEntity.ok(presencas);
     }
 
     @GetMapping("/chamada/{id}")
     public ResponseEntity<?> getPresencasByChamada(@PathVariable Long id) {
-        try {
-            List<Presenca> presencas = presencaService.getPresencasByChamadaId(id);
-            return presencas.isEmpty() ? ResponseEntity.status(404).body("Nenhuma presença encontrada para esta chamada.") : ResponseEntity.ok(presencas);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Erro ao buscar presenças da chamada.");
-        }
+
+        List<Presenca> presencas = presencaService.getPresencasByChamadaId(id);
+        return presencas.isEmpty() ? ResponseEntity.status(404).body("Nenhuma presença encontrada para esta chamada.") : ResponseEntity.ok(presencas);
     }
 
 
     @PostMapping
     public ResponseEntity<?> createPresenca(@RequestBody Presenca presenca) {
-        try {
-            Presenca savedPresenca = presencaService.savePresenca(presenca);
-            return ResponseEntity.ok(savedPresenca);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+
+        Presenca savedPresenca = presencaService.savePresenca(presenca);
+        return ResponseEntity.ok(savedPresenca);
     }
 
     @DeleteMapping("/{id}")

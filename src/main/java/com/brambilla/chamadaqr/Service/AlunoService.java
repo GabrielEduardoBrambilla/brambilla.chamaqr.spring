@@ -30,12 +30,16 @@ public class AlunoService {
         return alunoRepository.findById(id);
     }
 
+    public List<Aluno> getAllByIds(List<Long> ids) {
+        return alunoRepository.findAllById(ids);
+    }
     @Transactional
     public Aluno saveAluno(Aluno aluno) {
         if (aluno.getTurma() != null) {
             List<Turma> turmas = aluno.getTurma().stream()
                     .map(t -> turmaRepository.findById(t.getId()).orElseThrow(() -> new RuntimeException("Turma not found")))
                     .collect(Collectors.toList());
+
             aluno.setTurma(turmas);
         }
         validateAluno(aluno);

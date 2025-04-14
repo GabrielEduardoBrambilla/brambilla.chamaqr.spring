@@ -17,6 +17,8 @@ public class ProfessorService {
         return professorRepository.findAll();
     }
 
+
+
     public Optional<Professor> getProfessorById(Long id) {
         return professorRepository.findById(id);
     }

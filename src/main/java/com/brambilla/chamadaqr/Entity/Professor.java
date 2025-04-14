@@ -1,10 +1,12 @@
 package com.brambilla.chamadaqr.Entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
+import lombok.ToString;
 
 import java.util.List;
 
@@ -24,10 +26,12 @@ public class Professor {
     private String senha;
 
     @OneToMany(mappedBy = "professorResponsavel")
-    @JsonIgnoreProperties("professorResponsavel")
+    @JsonIgnoreProperties("professor")
+    @ToString.Exclude
     private List<Turma> turmas;
 
     @OneToMany(mappedBy = "professor")
-    @JsonIgnoreProperties("alunos")
+    @JsonIgnoreProperties({"professor", "turma"})
+    @ToString.Exclude
     private List<Chamada> chamadas;
 }
