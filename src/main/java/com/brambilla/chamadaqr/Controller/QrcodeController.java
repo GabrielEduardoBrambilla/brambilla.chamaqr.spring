@@ -27,7 +27,7 @@ public class QrcodeController {
     public ResponseEntity<?> getQrcodeById(@PathVariable Long id) {
         Optional<Qrcode> qrCode = qrCodeService.getQRCodeById(id);
         if (qrCode.isEmpty()) {
-            ResponseEntity.status(404).body("QR Code não encontrado.");
+            return ResponseEntity.status(404).body("QR Code não encontrado.");
         }
         return ResponseEntity.ok(qrCode);
     }
