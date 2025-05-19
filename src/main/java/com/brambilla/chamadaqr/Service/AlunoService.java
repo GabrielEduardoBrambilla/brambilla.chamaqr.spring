@@ -4,6 +4,9 @@ import com.brambilla.chamadaqr.Entity.Aluno;
 import com.brambilla.chamadaqr.Entity.Turma;
 import com.brambilla.chamadaqr.Repository.AlunoRepository;
 import com.brambilla.chamadaqr.Repository.TurmaRepository;
+import com.brambilla.chamadaqr.auth.LoginRepository;
+import com.brambilla.chamadaqr.auth.Usuario;
+import com.brambilla.chamadaqr.auth.userType;
 import jakarta.transaction.Transactional;
 import jakarta.validation.ValidationException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +21,8 @@ import java.util.stream.Collectors;
 public class AlunoService {
     @Autowired
     private AlunoRepository alunoRepository;
+    @Autowired
+    private LoginRepository loginRepository;
 
     @Autowired
     private TurmaRepository turmaRepository;
@@ -43,6 +48,7 @@ public class AlunoService {
             aluno.setTurma(turmas);
         }
         validateAluno(aluno);
+
         return alunoRepository.save(aluno);
     }
 
