@@ -22,9 +22,9 @@ import io.jsonwebtoken.security.Keys;
 public class JwtServiceGenerator {  
 
 	//Parâmetros para geração do token
-	public static final String SECRET_KEY = "UMACHAVESECRETADASUAAPIAQUIUMACHAVESECRETADASUAAPIAQUIUMACHAVESECRETADASUAAPIAQUIUMACHAVESECRETADASUAAPIAQUI";
+	public static final String SECRET_KEY = "b0lonhes4";
 	public static final SignatureAlgorithm ALGORITMO_ASSINATURA = SignatureAlgorithm.HS256;
-	public static final int HORAS_EXPIRACAO_TOKEN = 1;
+	public static final int HORAS_EXPIRACAO_TOKEN = 2;
 
 	public Map<String, Object> gerarPayload(Usuario usuario){
 		//AQUI VOCÊ PODE COLOCAR O QUE MAIS VAI COMPOR O PAYLOAD DO TOKEN
