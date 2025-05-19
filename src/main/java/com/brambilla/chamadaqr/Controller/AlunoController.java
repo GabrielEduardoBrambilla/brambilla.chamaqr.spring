@@ -5,6 +5,7 @@ import com.brambilla.chamadaqr.Entity.Chamada;
 import com.brambilla.chamadaqr.Service.AlunoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -52,6 +53,7 @@ public class AlunoController {
     }
 
     @PostMapping("/save")
+    @PreAuthorize("hasRole('PROFESSOR')")
     public ResponseEntity<?> createAluno(@RequestBody Aluno aluno) {
         if (alunoService.existsByRa(aluno.getRa())) {
             return ResponseEntity.badRequest().body("RA já existe meu amigo. Fala com a secretaria que deu caquinha.");
@@ -61,6 +63,7 @@ public class AlunoController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('PROFESSOR')")
     public ResponseEntity<?> deleteAluno(@PathVariable Long id) {
             alunoService.deleteAluno(id);
             return ResponseEntity.noContent().build();

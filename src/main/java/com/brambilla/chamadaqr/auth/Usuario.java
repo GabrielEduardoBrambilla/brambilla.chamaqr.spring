@@ -27,7 +27,7 @@ public class Usuario implements UserDetails{
 	private String username;
 	private String password;
 	@Enumerated(EnumType.STRING)
-	private userType role = userType.ALUNO;
+	private userType role = userType.ROLE_ALUNO;
 
 	@Override
 	@JsonIgnore

@@ -4,6 +4,7 @@ import com.brambilla.chamadaqr.Entity.Qrcode;
 import com.brambilla.chamadaqr.Service.QrcodeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -33,13 +34,13 @@ public class QrcodeController {
     }
 
     @GetMapping("/createdAt/{createdAt}")
+    @PreAuthorize("hasRole('PROFESSOR')")
     public ResponseEntity<?> getQRCodeByCreatedAt(@PathVariable String createdAt) {
         List<Qrcode> qrCodes = qrCodeService.getQRCodeByCreatedAt(createdAt);
 
         return qrCodes.isEmpty() ? ResponseEntity.status(404).body("Nenhum QR Code encontrado.") : ResponseEntity.ok(qrCodes);
     }
 
-    // 🔍 Get QRCode by Hash
     @GetMapping("/hash/{hash}")
     public ResponseEntity<?> getQRCodeByHash(@PathVariable String hash) {
         Optional<Qrcode> qrCode = qrCodeService.getQRCodeByHash(hash);
@@ -52,6 +53,7 @@ public class QrcodeController {
 
 
     @PostMapping
+    @PreAuthorize("hasRole('PROFESSOR')")
     public ResponseEntity<?> createQrcode(@RequestBody Qrcode qrCode) {
         if (qrCode == null || qrCode.getHash() == null) {
             return ResponseEntity.badRequest().body("Dados inválidos para criação do QR Code.");
@@ -62,6 +64,7 @@ public class QrcodeController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('PROFESSOR')")
     public ResponseEntity<?> deleteQRCode(@PathVariable Long id) {
         if (qrCodeService.getQRCodeById(id).isPresent()) {
             qrCodeService.deleteQRCode(id);

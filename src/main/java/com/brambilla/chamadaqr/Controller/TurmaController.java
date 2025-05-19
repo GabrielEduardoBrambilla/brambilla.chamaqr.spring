@@ -8,6 +8,7 @@ import com.brambilla.chamadaqr.Service.ProfessorService;
 import com.brambilla.chamadaqr.Service.TurmaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,6 +27,7 @@ public class TurmaController {
     private AlunoService alunoService;
 
     @PutMapping("update/{id}")
+    @PreAuthorize("hasRole('PROFESSOR')")
     public ResponseEntity<?> updateTurma(@PathVariable Long id, @RequestBody Turma turmaDetails) {
 
         Optional<Turma> turmaExist = turmaService.getTurmaById(id);
@@ -70,6 +72,7 @@ public class TurmaController {
 
 
     @GetMapping("/findAll")
+    @PreAuthorize("hasRole('PROFESSOR')")
     public ResponseEntity<?> getAllTurmas() {
 
         List<Turma> turmas = turmaService.getAllTurmas();
@@ -87,13 +90,14 @@ public class TurmaController {
     }
 
     @GetMapping("/curso/{curso}")
+    @PreAuthorize("hasRole('PROFESSOR')")
     public ResponseEntity<?> getTurmasByCurso(@PathVariable String curso) {
 
         List<Turma> turmas = turmaService.getTurmasByCurso(curso);
         return turmas.isEmpty() ? ResponseEntity.status(404).body("Nenhuma turma encontrada para este curso.") : ResponseEntity.ok(turmas);
     }
 
-    @GetMapping("/qtd-alunos/{qtdAlunos}")
+    @GetMapping("/qtdalunos/{qtdAlunos}")
     public ResponseEntity<?> getTurmasByQtdAlunos(@PathVariable Long qtdAlunos) {
 
         List<Turma> turmas = turmaService.getTurmasByQtdAlunos(qtdAlunos);
@@ -109,6 +113,7 @@ public class TurmaController {
     }
 
     @DeleteMapping("deleteById/{id}")
+    @PreAuthorize("hasRole('PROFESSOR')")
     public ResponseEntity<?> deleteTurma(@PathVariable Long id) {
 
         if (turmaService.getTurmaById(id).isPresent()) {

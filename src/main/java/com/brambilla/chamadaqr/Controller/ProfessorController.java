@@ -4,6 +4,7 @@ import com.brambilla.chamadaqr.Entity.Professor;
 import com.brambilla.chamadaqr.Service.ProfessorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -35,6 +36,7 @@ public class ProfessorController {
     }
 
     @GetMapping("/nome/{nome}")
+    @PreAuthorize("hasRole('PROFESSOR')")
     public ResponseEntity<?> getProfessorByNome(@PathVariable String nome) {
 
         Optional<Professor> professor = professorService.getProfessorByNome(nome);
@@ -44,7 +46,7 @@ public class ProfessorController {
         return ResponseEntity.ok(professor);
     }
 
-    // 🔍 Get professor by Email
+
     @GetMapping("/email/{email}")
     public ResponseEntity<?> getProfessorByEmail(@PathVariable String email) {
 
@@ -57,6 +59,7 @@ public class ProfessorController {
 
 
     @PutMapping("/update/{id}")
+    @PreAuthorize("hasRole('PROFESSOR')")
     public ResponseEntity<?> updateProfessor(@RequestBody Professor professor, @PathVariable Long id) {
 
         Optional<Professor> p = professorService.getProfessorById(id);
@@ -66,7 +69,9 @@ public class ProfessorController {
         Professor savedProfessor = professorService.saveProfessor(professor);
         return ResponseEntity.ok(savedProfessor);
     }
+
     @PostMapping("/save")
+    @PreAuthorize("hasRole('PROFESSOR')")
     public ResponseEntity<?> createProfessor(@RequestBody Professor professor) {
 
         if (professor == null || professor.getNome() == null || professor.getEmail() == null || professor.getSenha() == null) {
@@ -96,6 +101,7 @@ public class ProfessorController {
     }
 
     @DeleteMapping("/deleteById/{id}")
+    @PreAuthorize("hasRole('PROFESSOR')")
     public ResponseEntity<?> deleteProfessor(@PathVariable Long id) {
 
         if (professorService.getProfessorById(id).isPresent()) {
