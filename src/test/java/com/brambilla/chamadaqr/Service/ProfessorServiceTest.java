@@ -2,12 +2,11 @@ package com.brambilla.chamadaqr.Service;
 
 import com.brambilla.chamadaqr.Entity.Professor;
 import com.brambilla.chamadaqr.Repository.ProfessorRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.*;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,94 +14,130 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest
-public class ProfessorServiceTest {
+@ExtendWith(org.mockito.junit.jupiter.MockitoExtension.class)
+class ProfessorServiceTest {
 
-    @Autowired
-    private ProfessorService professorService;
-
-    @MockBean
+    @Mock
     private ProfessorRepository professorRepository;
 
+    @InjectMocks
+    private ProfessorService professorService;
+
+    private Professor sampleProf;
+
+    @BeforeEach
+    void setUp() {
+        sampleProf = new Professor();
+        sampleProf.setId(7L);
+        sampleProf.setNome("Ana Souza");
+        sampleProf.setEmail("ana@uni.com");
+        sampleProf.setSenha("senhaSegura");
+    }
+
     @Test
-    @DisplayName("Cena 01 - Deve retornar todos os professores")
-    void cenario01() {
-        when(professorRepository.findAll()).thenReturn(List.of(new Professor(), new Professor()));
+    @DisplayName("getAllProfessores() → retorna lista vinda do repositório")
+    void testGetAllProfessores() {
+        when(professorRepository.findAll()).thenReturn(List.of(sampleProf));
 
         List<Professor> result = professorService.getAllProfessores();
 
-        assertEquals(2, result.size());
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals(sampleProf, result.get(0));
+        verify(professorRepository, times(1)).findAll();
     }
 
     @Test
-    @DisplayName("Cena 02 - Deve retornar professor por ID")
-    void cenario02() {
-        Professor professor = new Professor();
-        professor.setId(1L);
-        professor.setNome("Carlos");
+    @DisplayName("getProfessorById() → retorna Optional quando existe")
+    void testGetProfessorByIdFound() {
+        when(professorRepository.findById(7L)).thenReturn(Optional.of(sampleProf));
 
-        when(professorRepository.findById(1L)).thenReturn(Optional.of(professor));
-
-        Optional<Professor> result = professorService.getProfessorById(1L);
+        Optional<Professor> result = professorService.getProfessorById(7L);
 
         assertTrue(result.isPresent());
-        assertEquals("Carlos", result.get().getNome());
+        assertEquals(sampleProf, result.get());
+        verify(professorRepository).findById(7L);
     }
 
     @Test
-    @DisplayName("Cena 03 - Deve salvar professor")
-    void cenario03() {
-        Professor professor = new Professor();
-        professor.setNome("Joana");
-        professor.setEmail("joana@email.com");
-        professor.setSenha("senha123");
+    @DisplayName("getProfessorById() → retorna Optional.empty quando não existe")
+    void testGetProfessorByIdNotFound() {
+        when(professorRepository.findById(99L)).thenReturn(Optional.empty());
 
-        when(professorRepository.save(any(Professor.class))).thenReturn(professor);
+        Optional<Professor> result = professorService.getProfessorById(99L);
 
-        Professor saved = professorService.saveProfessor(professor);
-
-        assertNotNull(saved);
-        assertEquals("Joana", saved.getNome());
+        assertFalse(result.isPresent());
+        verify(professorRepository).findById(99L);
     }
 
     @Test
-    @DisplayName("Cena 04 - Deve deletar professor por ID")
-    void cenario04() {
-        Long id = 1L;
+    @DisplayName("saveProfessor() → delega ao repositório e retorna entidade salva")
+    void testSaveProfessor() {
+        when(professorRepository.save(sampleProf)).thenReturn(sampleProf);
 
-        doNothing().when(professorRepository).deleteById(id);
+        Professor result = professorService.saveProfessor(sampleProf);
 
-        professorService.deleteProfessor(id);
-
-        verify(professorRepository, times(1)).deleteById(id);
+        assertSame(sampleProf, result);
+        verify(professorRepository).save(sampleProf);
     }
 
     @Test
-    @DisplayName("Cena 05 - Deve buscar professor por nome")
-    void cenario05() {
-        Professor professor = new Professor();
-        professor.setNome("Ricardo");
+    @DisplayName("deleteProfessor() → delega exclusão ao repositório")
+    void testDeleteProfessor() {
+        doNothing().when(professorRepository).deleteById(7L);
 
-        when(professorRepository.findByNome("Ricardo")).thenReturn(Optional.of(professor));
+        professorService.deleteProfessor(7L);
 
-        Optional<Professor> result = professorService.getProfessorByNome("Ricardo");
+        verify(professorRepository).deleteById(7L);
+    }
+
+    @Test
+    @DisplayName("getProfessorByNome() → retorna Optional quando encontra por nome")
+    void testGetProfessorByNomeFound() {
+        when(professorRepository.findByNome("Ana Souza"))
+                .thenReturn(Optional.of(sampleProf));
+
+        Optional<Professor> result = professorService.getProfessorByNome("Ana Souza");
 
         assertTrue(result.isPresent());
-        assertEquals("Ricardo", result.get().getNome());
+        assertEquals(sampleProf, result.get());
+        verify(professorRepository).findByNome("Ana Souza");
     }
 
     @Test
-    @DisplayName("Cena 06 - Deve buscar professor por email")
-    void cenario06() {
-        Professor professor = new Professor();
-        professor.setEmail("teste@email.com");
+    @DisplayName("getProfessorByNome() → Optional.empty quando não encontra por nome")
+    void testGetProfessorByNomeNotFound() {
+        when(professorRepository.findByNome("Inexistente"))
+                .thenReturn(Optional.empty());
 
-        when(professorRepository.findByEmail("teste@email.com")).thenReturn(Optional.of(professor));
+        Optional<Professor> result = professorService.getProfessorByNome("Inexistente");
 
-        Optional<Professor> result = professorService.getProfessorByEmail("teste@email.com");
+        assertFalse(result.isPresent());
+        verify(professorRepository).findByNome("Inexistente");
+    }
+
+    @Test
+    @DisplayName("getProfessorByEmail() → retorna Optional quando encontra por email")
+    void testGetProfessorByEmailFound() {
+        when(professorRepository.findByEmail("ana@uni.com"))
+                .thenReturn(Optional.of(sampleProf));
+
+        Optional<Professor> result = professorService.getProfessorByEmail("ana@uni.com");
 
         assertTrue(result.isPresent());
-        assertEquals("teste@email.com", result.get().getEmail());
+        assertEquals(sampleProf, result.get());
+        verify(professorRepository).findByEmail("ana@uni.com");
+    }
+
+    @Test
+    @DisplayName("getProfessorByEmail() → Optional.empty quando não encontra por email")
+    void testGetProfessorByEmailNotFound() {
+        when(professorRepository.findByEmail("x@x.com"))
+                .thenReturn(Optional.empty());
+
+        Optional<Professor> result = professorService.getProfessorByEmail("x@x.com");
+
+        assertFalse(result.isPresent());
+        verify(professorRepository).findByEmail("x@x.com");
     }
 }
-

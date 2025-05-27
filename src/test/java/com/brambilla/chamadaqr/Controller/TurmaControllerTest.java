@@ -6,174 +6,238 @@ import com.brambilla.chamadaqr.Entity.Turma;
 import com.brambilla.chamadaqr.Service.AlunoService;
 import com.brambilla.chamadaqr.Service.ProfessorService;
 import com.brambilla.chamadaqr.Service.TurmaService;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
-
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 import java.util.Optional;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+class TurmaControllerTest {
 
-@WebMvcTest(TurmaController.class)
-public class TurmaControllerTest {
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @MockBean
+    private TurmaController controller;
     private TurmaService turmaService;
-
-    @MockBean
     private ProfessorService professorService;
-
-    @MockBean
     private AlunoService alunoService;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    @BeforeEach
+    void setUp() {
+        turmaService = mock(TurmaService.class);
+        professorService = mock(ProfessorService.class);
+        alunoService = mock(AlunoService.class);
 
-    private Turma createMockTurma() {
-        Turma turma = new Turma();
-        turma.setId(1L);
-        turma.setCurso("Engenharia");
-        turma.setQtdAlunos(30L);
-        turma.setSemestre("2024.1");
+        controller = new TurmaController();
+        ReflectionTestUtils.setField(controller, "turmaService", turmaService);
+        ReflectionTestUtils.setField(controller, "professorService", professorService);
+        ReflectionTestUtils.setField(controller, "alunoService", alunoService);
+    }
 
-        Professor professor = new Professor();
-        professor.setId(1L);
-        professor.setNome("Prof. João");
-        professor.setEmail("joao@exemplo.com");
-        professor.setSenha("123456");
-        turma.setProfessorResponsavel(professor);
+    private Turma buildTurma() {
+        Turma t = new Turma();
+        t.setId(5L);
+        t.setCurso("Engenharia");
+        t.setQtdAlunos(30L);
+        t.setSemestre("2025-1");
+        return t;
+    }
 
-        return turma;
+    private Professor buildProfessor() {
+        Professor p = new Professor();
+        p.setId(2L);
+        p.setNome("Prof A");
+        p.setEmail("a@uni");
+        p.setSenha("123456");
+        return p;
+    }
+
+    private Aluno buildAluno(Long id) {
+        Aluno a = new Aluno();
+        a.setId(id);
+        a.setNome("Aluno"+id);
+        a.setRa(1000L+id);
+        a.setSenha("senha");
+        return a;
     }
 
     @Test
-    @DisplayName("GET /turmas/findAll - retorna todas as turmas")
-    void getAllTurmas() throws Exception {
-        Mockito.when(turmaService.getAllTurmas()).thenReturn(List.of(createMockTurma()));
+    @DisplayName("PUT update/{id} → 404 se não existe")
+    void testUpdateNotFound() {
+        when(turmaService.getTurmaById(5L)).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/turmas/findAll"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].curso").value("Engenharia"));
+        ResponseEntity<?> resp = controller.updateTurma(5L, buildTurma());
+        assertEquals(HttpStatusCode.valueOf(404), resp.getStatusCode());
+        assertEquals("Turma não encontrada.", resp.getBody());
     }
 
     @Test
-    @DisplayName("GET /turmas/{id} - retorna turma por ID")
-    void getTurmaById() throws Exception {
-        Mockito.when(turmaService.getTurmaById(1L)).thenReturn(Optional.of(createMockTurma()));
+    @DisplayName("PUT update/{id} → 400 se professor não encontrado")
+    void testUpdateProfessorNotFound() {
+        Turma original = buildTurma();
+        when(turmaService.getTurmaById(5L)).thenReturn(Optional.of(original));
 
-        mockMvc.perform(get("/turmas/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.curso").value("Engenharia"));
+        // tentativa de setar professor inexistente
+        Turma detalhes = new Turma();
+        Professor fake = new Professor(); fake.setId(99L);
+        detalhes.setProfessorResponsavel(fake);
+
+        when(professorService.getProfessorById(99L)).thenReturn(Optional.empty());
+
+        ResponseEntity<?> resp = controller.updateTurma(5L, detalhes);
+        assertEquals(400, resp.getStatusCodeValue());
+        assertEquals("Professor responsável não encontrado.", resp.getBody());
     }
 
     @Test
-    @DisplayName("GET /turmas/{id} - turma não encontrada")
-    void getTurmaByIdNotFound() throws Exception {
-        Mockito.when(turmaService.getTurmaById(99L)).thenReturn(Optional.empty());
+    @DisplayName("PUT update/{id} → 200 com professor e alunos atualizados")
+    void testUpdateSuccess() {
+        Turma original = buildTurma();
+        when(turmaService.getTurmaById(5L)).thenReturn(Optional.of(original));
 
-        mockMvc.perform(get("/turmas/99"))
-                .andExpect(status().isNotFound())
-                .andExpect(content().string("Turma não encontrada."));
+        // detalhes com novo curso, professor e lista de alunos
+        Turma detalhes = new Turma();
+        detalhes.setCurso("Medicina");
+        detalhes.setQtdAlunos(20L);
+        detalhes.setSemestre("2025-2");
+
+        Professor prof = buildProfessor();
+        detalhes.setProfessorResponsavel(prof);
+        when(professorService.getProfessorById(2L)).thenReturn(Optional.of(prof));
+
+        Aluno a1 = buildAluno(10L);
+        Aluno a2 = buildAluno(11L);
+        detalhes.setAlunos(List.of(a1, a2));
+        when(alunoService.getAllByIds(List.of(10L,11L))).thenReturn(List.of(a1,a2));
+
+        // salvar devolve exatamente o objeto recebido
+        when(turmaService.saveTurma(any(Turma.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ResponseEntity<?> resp = controller.updateTurma(5L, detalhes);
+        assertEquals(200, resp.getStatusCodeValue());
+
+        Turma atualizado = (Turma) resp.getBody();
+        assertEquals("Medicina", atualizado.getCurso());
+        assertEquals(20L, atualizado.getQtdAlunos());
+        assertEquals("2025-2", atualizado.getSemestre());
+        assertSame(prof, atualizado.getProfessorResponsavel());
+        assertEquals(2, atualizado.getAlunos().size());
     }
 
     @Test
-    @DisplayName("GET /turmas/curso/{curso} - retorna turmas por curso")
-    void getTurmasByCurso() throws Exception {
-        Mockito.when(turmaService.getTurmasByCurso("Engenharia")).thenReturn(List.of(createMockTurma()));
+    @DisplayName("GET /turmas/findAll → 200 + lista")
+    void testGetAllTurmas() {
+        Turma t = buildTurma();
+        when(turmaService.getAllTurmas()).thenReturn(List.of(t));
 
-        mockMvc.perform(get("/turmas/curso/Engenharia"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].curso").value("Engenharia"));
+        ResponseEntity<?> resp = controller.getAllTurmas();
+        assertEquals(200, resp.getStatusCodeValue());
+        @SuppressWarnings("unchecked")
+        List<Turma> list = (List<Turma>) resp.getBody();
+        assertEquals(1, list.size());
     }
 
     @Test
-    @DisplayName("GET /turmas/qtd-alunos/{qtdAlunos} - retorna turmas por quantidade de alunos")
-    void getTurmasByQtdAlunos() throws Exception {
-        Mockito.when(turmaService.getTurmasByQtdAlunos(30L)).thenReturn(List.of(createMockTurma()));
+    @DisplayName("GET /turmas/{id} → 200 quando existe")
+    void testGetByIdFound() {
+        Turma t = buildTurma();
+        when(turmaService.getTurmaById(5L)).thenReturn(Optional.of(t));
 
-        mockMvc.perform(get("/turmas/qtd-alunos/30"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].qtdAlunos").value(30));
+        ResponseEntity<?> resp = controller.getTurmaById(5L);
+        assertEquals(200, resp.getStatusCodeValue());
+        Optional<?> opt = (Optional<?>) resp.getBody();
+        assertTrue(opt.isPresent());
+        assertEquals(t, opt.get());
     }
 
     @Test
-    @DisplayName("POST /turmas/save - cria turma com sucesso")
-    void createTurma() throws Exception {
-        Turma turma = createMockTurma();
-        Mockito.when(turmaService.saveTurma(any(Turma.class))).thenReturn(turma);
+    @DisplayName("GET /turmas/{id} → 404 quando não existe")
+    void testGetByIdNotFound() {
+        when(turmaService.getTurmaById(5L)).thenReturn(Optional.empty());
 
-        mockMvc.perform(post("/turmas/save")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(turma)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.curso").value("Engenharia"));
+        ResponseEntity<?> resp = controller.getTurmaById(5L);
+        assertEquals(404, resp.getStatusCodeValue());
+        assertEquals("Turma não encontrada.", resp.getBody());
     }
 
     @Test
-    @DisplayName("PUT /turmas/update/{id} - atualiza turma com sucesso")
-    void updateTurma() throws Exception {
-        Turma turma = createMockTurma();
-        Professor professor = turma.getProfessorResponsavel();
+    @DisplayName("GET /turmas/curso/{curso} → 200 quando há resultados")
+    void testGetByCursoFound() {
+        Turma t = buildTurma();
+        when(turmaService.getTurmasByCurso("Engenharia")).thenReturn(List.of(t));
 
-        Mockito.when(turmaService.getTurmaById(1L)).thenReturn(Optional.of(turma));
-        Mockito.when(professorService.getProfessorById(1L)).thenReturn(Optional.of(professor));
-        Mockito.when(alunoService.getAllByIds(any())).thenReturn(List.of());
-        Mockito.when(turmaService.saveTurma(any())).thenReturn(turma);
-
-        mockMvc.perform(put("/turmas/update/1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(turma)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.curso").value("Engenharia"));
+        ResponseEntity<?> resp = controller.getTurmasByCurso("Engenharia");
+        assertEquals(200, resp.getStatusCodeValue());
+        @SuppressWarnings("unchecked")
+        List<Turma> list = (List<Turma>) resp.getBody();
+        assertEquals(1, list.size());
     }
 
     @Test
-    @DisplayName("PUT /turmas/update/{id} - turma não encontrada")
-    void updateTurmaNotFound() throws Exception {
-        Mockito.when(turmaService.getTurmaById(99L)).thenReturn(Optional.empty());
+    @DisplayName("GET /turmas/curso/{curso} → 404 quando vazio")
+    void testGetByCursoNotFound() {
+        when(turmaService.getTurmasByCurso("X")).thenReturn(List.of());
 
-        mockMvc.perform(put("/turmas/update/99")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createMockTurma())))
-                .andExpect(status().isNotFound())
-                .andExpect(content().string("Turma não encontrada."));
+        ResponseEntity<?> resp = controller.getTurmasByCurso("X");
+        assertEquals(404, resp.getStatusCodeValue());
+        assertEquals("Nenhuma turma encontrada para este curso.", resp.getBody());
     }
 
     @Test
-    @DisplayName("DELETE /turmas/deleteById/{id} - remove turma com sucesso")
-    void deleteTurma() throws Exception {
-        Mockito.when(turmaService.getTurmaById(1L)).thenReturn(Optional.of(createMockTurma()));
-        doNothing().when(turmaService).deleteTurma(1L);
+    @DisplayName("GET /turmas/qtdalunos/{qtd} → 200 quando há resultados")
+    void testGetByQtdAlunosFound() {
+        Turma t = buildTurma();
+        when(turmaService.getTurmasByQtdAlunos(30L)).thenReturn(List.of(t));
 
-        mockMvc.perform(delete("/turmas/deleteById/1"))
-                .andExpect(status().isNoContent());
+        ResponseEntity<?> resp = controller.getTurmasByQtdAlunos(30L);
+        assertEquals(200, resp.getStatusCodeValue());
+        @SuppressWarnings("unchecked")
+        List<Turma> list = (List<Turma>) resp.getBody();
+        assertEquals(1, list.size());
     }
 
     @Test
-    @DisplayName("DELETE /turmas/deleteById/{id} - turma não encontrada")
-    void deleteTurmaNotFound() throws Exception {
-        Mockito.when(turmaService.getTurmaById(99L)).thenReturn(Optional.empty());
+    @DisplayName("GET /turmas/qtdalunos/{qtd} → 404 quando vazio")
+    void testGetByQtdAlunosNotFound() {
+        when(turmaService.getTurmasByQtdAlunos(0L)).thenReturn(List.of());
 
-        mockMvc.perform(delete("/turmas/deleteById/99"))
-                .andExpect(status().isNotFound())
-                .andExpect(content().string("Turma não encontrada."));
+        ResponseEntity<?> resp = controller.getTurmasByQtdAlunos(0L);
+        assertEquals(404, resp.getStatusCodeValue());
+        assertEquals("Nenhuma turma encontrada com essa quantidade de alunos.", resp.getBody());
+    }
+
+    @Test
+    @DisplayName("POST /turmas/save → 200 e retorna criada")
+    void testCreateTurma() {
+        Turma t = buildTurma();
+        when(turmaService.saveTurma(t)).thenReturn(t);
+
+        ResponseEntity<?> resp = controller.createTurma(t);
+        assertEquals(200, resp.getStatusCodeValue());
+        assertSame(t, resp.getBody());
+    }
+
+    @Test
+    @DisplayName("DELETE deleteById/{id} → 204 quando existe")
+    void testDeleteWhenExists() {
+        when(turmaService.getTurmaById(5L)).thenReturn(Optional.of(buildTurma()));
+        doNothing().when(turmaService).deleteTurma(5L);
+
+        ResponseEntity<?> resp = controller.deleteTurma(5L);
+        assertEquals(204, resp.getStatusCodeValue());
+    }
+
+    @Test
+    @DisplayName("DELETE deleteById/{id} → 404 quando não existe")
+    void testDeleteNotFound() {
+        when(turmaService.getTurmaById(5L)).thenReturn(Optional.empty());
+
+        ResponseEntity<?> resp = controller.deleteTurma(5L);
+        assertEquals(404, resp.getStatusCodeValue());
+        assertEquals("Turma não encontrada.", resp.getBody());
     }
 }

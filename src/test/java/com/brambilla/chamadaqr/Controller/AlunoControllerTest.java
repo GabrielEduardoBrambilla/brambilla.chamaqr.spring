@@ -1,154 +1,137 @@
 package com.brambilla.chamadaqr.Controller;
 
-
 import com.brambilla.chamadaqr.Entity.Aluno;
 import com.brambilla.chamadaqr.Service.AlunoService;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.springframework.http.ResponseEntity;
+import org.springframework.test.util.ReflectionTestUtils;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
-
-import org.springframework.test.web.servlet.MockMvc;
-
-import java.util.Arrays;
+import javax.swing.text.html.Option;
 import java.util.List;
 import java.util.Optional;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-@WebMvcTest(AlunoController.class)
-public class AlunoControllerTest {
+class AlunoControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    private AlunoController controller;
+    private AlunoService service;
 
-    @MockBean
-    private AlunoService alunoService;
+    @BeforeEach
+    void setUp() {
+        service = mock(AlunoService.class);
+        controller = new AlunoController();
+        // inject mock into private field
+        ReflectionTestUtils.setField(controller, "alunoService", service);
+    }
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Test
-    @DisplayName("GET /alunos/findAll - retorna lista de alunos")
-    void getAllAlunos_shouldReturnList() throws Exception {
-        Aluno aluno1 = new Aluno();
-        aluno1.setId(1L);
-        aluno1.setNome("João");
-        aluno1.setRa(123L);
-        aluno1.setSenha("123456");
-
-        List<Aluno> alunos = Arrays.asList(aluno1);
-        Mockito.when(alunoService.getAllAlunos()).thenReturn(alunos);
-
-        mockMvc.perform(get("/alunos/findAll"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].nome").value("João"));
+    private Aluno sampleAluno() {
+        Aluno a = new Aluno();
+        a.setId(1L);
+        a.setNome("João");
+        a.setRa(12345L);
+        a.setSenha("senha123");
+        a.setNivelAlerta(2);
+        a.setSuspenso(false);
+        return a;
     }
 
     @Test
-    @DisplayName("GET /alunos/{id} - retorna aluno existente")
-    void getAlunoById_shouldReturnAluno() throws Exception {
-        Aluno aluno = new Aluno();
-        aluno.setId(1L);
-        aluno.setNome("Maria");
-        aluno.setRa(456L);
-        aluno.setSenha("abcdef");
+    @DisplayName("getAllAlunos → 200 + lista")
+    void testGetAllAlunos() {
+        Aluno aluno = sampleAluno();
+        when(service.getAllAlunos()).thenReturn(List.of(aluno));
 
-        Mockito.when(alunoService.getAlunoById(1L)).thenReturn(Optional.of(aluno));
-
-        mockMvc.perform(get("/alunos/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nome").value("Maria")); // Usando Optional no controller
+        ResponseEntity<?> resp = controller.getAllAlunos();
+        assertEquals(200, resp.getStatusCodeValue());
+        @SuppressWarnings("unchecked")
+        List<Aluno> body = (List<Aluno>) resp.getBody();
+        assertNotNull(body);
+        assertEquals(1, body.size());
+        assertEquals("João", body.get(0).getNome());
     }
 
     @Test
-    @DisplayName("GET /alunos/{id} - retorna erro se aluno não existir")
-    void getAlunoById_shouldReturnNotFound() throws Exception {
-        Mockito.when(alunoService.getAlunoById(99L)).thenReturn(Optional.empty());
+    @DisplayName("getAlunoById (existente) → 200 + aluno")
+    void testGetAlunoByIdFound() {
+        Aluno aluno = sampleAluno();
+        when(service.getAlunoById(1L)).thenReturn(Optional.of(aluno));
 
-        mockMvc.perform(get("/alunos/99"))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string("Aluno não encontrado."));
+        ResponseEntity<?> resp = controller.getAlunoById(1L);
+        assertEquals(200, resp.getStatusCodeValue());
+        Optional<Aluno> body = (Optional<Aluno>) resp.getBody();
     }
 
     @Test
-    @DisplayName("GET /alunos/ByNivelAlerta - retorna alunos por nível")
-    void getByNivelAlerta_shouldReturnAlunos() throws Exception {
-        Aluno aluno = new Aluno();
-        aluno.setId(2L);
-        aluno.setNome("Carlos");
-        aluno.setRa(789L);
-        aluno.setSenha("senha123");
+    @DisplayName("getAlunoById (não existe) → 400 + mensagem")
+    void testGetAlunoByIdNotFound() {
+        when(service.getAlunoById(99L)).thenReturn(Optional.empty());
 
-        Mockito.when(alunoService.findByAlertLevel(2)).thenReturn(List.of(aluno));
-
-        mockMvc.perform(get("/alunos/ByNivelAlerta")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("2"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].nome").value("Carlos"));
+        ResponseEntity<?> resp = controller.getAlunoById(99L);
+        assertEquals(400, resp.getStatusCodeValue());
+        assertEquals("Aluno não encontrado.", resp.getBody());
     }
 
     @Test
-    @DisplayName("POST /alunos/save - salva novo aluno com sucesso")
-    void createAluno_shouldSaveAluno() throws Exception {
-        Aluno aluno = new Aluno();
-        aluno.setId(3L);
-        aluno.setNome("Pedro");
-        aluno.setRa(111L);
-        aluno.setSenha("senha321");
+    @DisplayName("findByAlertLevel → 200 + filtragem")
+    void testFindByAlertLevel() {
+        Aluno aluno = sampleAluno();
+        aluno.setNivelAlerta(1);
+        when(service.findByAlertLevel(1)).thenReturn(List.of(aluno));
 
-        Mockito.when(alunoService.existsByRa(111L)).thenReturn(false);
-        Mockito.when(alunoService.saveAluno(any(Aluno.class))).thenReturn(aluno);
-
-        mockMvc.perform(post("/alunos/save")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(aluno)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nome").value("Pedro"));
+        ResponseEntity<?> resp = controller.findByAlertLevel(1);
+        assertEquals(200, resp.getStatusCodeValue());
+        @SuppressWarnings("unchecked")
+        List<Aluno> list = (List<Aluno>) resp.getBody();
+        assertEquals(1, list.size());
+        assertEquals(1, list.get(0).getNivelAlerta());
     }
 
     @Test
-    @DisplayName("POST /alunos/save - retorna erro se RA já existe")
-    void createAluno_shouldReturnBadRequestIfRaExists() throws Exception {
-        Aluno aluno = new Aluno();
-        aluno.setNome("Joana");
-        aluno.setRa(222L);
-        aluno.setSenha("senha456");
+    @DisplayName("existAluno → 200 + true/false")
+    void testExistAluno() {
+        when(service.existAluno(123L)).thenReturn(true);
 
-        Mockito.when(alunoService.existsByRa(222L)).thenReturn(true);
-
-        mockMvc.perform(post("/alunos/save")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(aluno)))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string("RA já existe meu amigo. Fala com a secretaria que deu caquinha."));
+        ResponseEntity<?> resp = controller.existAluno(123L);
+        assertEquals(200, resp.getStatusCodeValue());
+        assertEquals(true, resp.getBody());
     }
 
     @Test
-    @DisplayName("DELETE /alunos/{id} - deleta aluno com sucesso")
-    void deleteAluno_shouldReturnNoContent() throws Exception {
-        mockMvc.perform(delete("/alunos/1"))
-                .andExpect(status().isNoContent());
+    @DisplayName("saveAluno (novo RA) → 200 + entidade salva")
+    void testSaveAlunoSuccess() {
+        Aluno aluno = sampleAluno();
+        when(service.existsByRa(aluno.getRa())).thenReturn(false);
+        when(service.saveAluno(aluno)).thenReturn(aluno);
+
+        ResponseEntity<Aluno> resp = (ResponseEntity<Aluno>) controller.saveAluno(aluno);
+        assertEquals(200, resp.getStatusCodeValue());
+        assertEquals("João", resp.getBody().getNome());
     }
 
     @Test
-    @DisplayName("GET /alunos/exist/{id} - verifica existência por RA")
-    void existAluno_shouldReturnTrueOrFalse() throws Exception {
-        Mockito.when(alunoService.existAluno(100L)).thenReturn(true);
+    @DisplayName("saveAluno (RA duplicado) → 400 + mensagem customizada")
+    void testSaveAlunoDuplicateRa() {
+        Aluno aluno = sampleAluno();
+        when(service.existsByRa(aluno.getRa())).thenReturn(true);
 
-        mockMvc.perform(get("/alunos/exist/100").param("ra", "100"))
-                .andExpect(status().isOk())
-                .andExpect(content().string("true"));
+        ResponseEntity<Aluno> resp = (ResponseEntity<Aluno>) controller.saveAluno(aluno);
+        assertEquals(400, resp.getStatusCodeValue());
+        assertEquals("RA já existe meu amigo. Fala com a secretaria que deu caquinha.", resp.getBody());
+    }
+
+    @Test
+    @DisplayName("deleteAluno → 204 No Content")
+    void testDeleteAluno() {
+        // no exception thrown
+        doNothing().when(service).deleteAluno(1L);
+
+        ResponseEntity<Void> resp = (ResponseEntity<Void>) controller.deleteAluno(1L);
+        assertEquals(204, resp.getStatusCodeValue());
+        assertNull(resp.getBody());
+        verify(service).deleteAluno(1L);
     }
 }
-

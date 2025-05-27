@@ -41,7 +41,7 @@ public class AlunoController {
         return ResponseEntity.ok(aluno);
     }
     @GetMapping("/exist/{id}")
-    public ResponseEntity<?> findByAlertLevel(@RequestParam Long ra){
+    public ResponseEntity<?> existAluno(@RequestParam Long ra){
         // Verifica se o aluno existe
         boolean aluno = alunoService.existAluno(ra);
 
@@ -54,7 +54,7 @@ public class AlunoController {
 
     @PostMapping("/save")
     @PreAuthorize("hasRole('PROFESSOR')")
-    public ResponseEntity<?> createAluno(@RequestBody Aluno aluno) {
+    public ResponseEntity<?> saveAluno(@RequestBody Aluno aluno) {
         if (alunoService.existsByRa(aluno.getRa())) {
             return ResponseEntity.badRequest().body("RA já existe meu amigo. Fala com a secretaria que deu caquinha.");
         }

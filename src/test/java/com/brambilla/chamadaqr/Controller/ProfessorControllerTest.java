@@ -2,168 +2,220 @@ package com.brambilla.chamadaqr.Controller;
 
 import com.brambilla.chamadaqr.Entity.Professor;
 import com.brambilla.chamadaqr.Service.ProfessorService;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.http.ResponseEntity;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 import java.util.Optional;
 
-import static org.mockito.ArgumentMatchers.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-@WebMvcTest(ProfessorController.class)
-public class ProfessorControllerTest {
+class ProfessorControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    private ProfessorController controller;
+    private ProfessorService service;
 
-    @MockBean
-    private ProfessorService professorService;
+    @BeforeEach
+    void setUp() {
+        service = mock(ProfessorService.class);
+        controller = new ProfessorController();
+        ReflectionTestUtils.setField(controller, "professorService", service);
+    }
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    private Professor createProfessorMock() {
+    private Professor buildProfessor() {
         Professor p = new Professor();
-        p.setId(1L);
-        p.setNome("Fulano");
-        p.setEmail("fulano@teste.com");
-        p.setSenha("123456");
+        p.setId(10L);
+        p.setNome("Maria Silva");
+        p.setEmail("maria@uni.edu");
+        p.setSenha("segredo");
         return p;
     }
 
     @Test
-    @DisplayName("GET /professores/findAll - deve retornar lista de professores")
-    void getAllProfessores() throws Exception {
-        Mockito.when(professorService.getAllProfessores()).thenReturn(List.of(createProfessorMock()));
+    @DisplayName("GET /professores/findAll → 200 + lista de professores")
+    void testGetAllProfessores() {
+        Professor p = buildProfessor();
+        when(service.getAllProfessores()).thenReturn(List.of(p));
 
-        mockMvc.perform(get("/professores/findAll"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].nome").value("Fulano"));
+        ResponseEntity<?> resp = controller.getAllProfessores();
+        assertEquals(200, resp.getStatusCodeValue());
+        @SuppressWarnings("unchecked")
+        List<Professor> list = (List<Professor>) resp.getBody();
+        assertNotNull(list);
+        assertEquals(1, list.size());
+        assertEquals("Maria Silva", list.get(0).getNome());
     }
 
     @Test
-    @DisplayName("GET /professores/findById/{id} - deve retornar professor existente")
-    void getProfessorById() throws Exception {
-        Mockito.when(professorService.getProfessorById(1L)).thenReturn(Optional.of(createProfessorMock()));
+    @DisplayName("GET /professores/findById/{id} → 200 quando existe")
+    void testGetByIdFound() {
+        Professor p = buildProfessor();
+        when(service.getProfessorById(10L)).thenReturn(Optional.of(p));
 
-        mockMvc.perform(get("/professores/findById/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nome").value("Fulano"));
+        ResponseEntity<?> resp = controller.getProfessorById(10L);
+        assertEquals(200, resp.getStatusCodeValue());
+        // controller retorna Optional dentro do body
+        Optional<?> opt = (Optional<?>) resp.getBody();
+        assertTrue(opt.isPresent());
+        assertEquals(p, opt.get());
     }
 
     @Test
-    @DisplayName("GET /professores/findById/{id} - deve retornar erro 404")
-    void getProfessorByIdNotFound() throws Exception {
-        Mockito.when(professorService.getProfessorById(99L)).thenReturn(Optional.empty());
+    @DisplayName("GET /professores/findById/{id} → 404 quando não existe")
+    void testGetByIdNotFound() {
+        when(service.getProfessorById(99L)).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/professores/findById/99"))
-                .andExpect(status().isNotFound())
-                .andExpect(content().string("Professor não encontrado."));
+        ResponseEntity<?> resp = controller.getProfessorById(99L);
+        assertEquals(404, resp.getStatusCodeValue());
+        assertEquals("Professor não encontrado.", resp.getBody());
     }
 
     @Test
-    @DisplayName("GET /professores/nome/{nome} - deve retornar professor pelo nome")
-    void getProfessorByNome() throws Exception {
-        Mockito.when(professorService.getProfessorByNome("Fulano")).thenReturn(Optional.of(createProfessorMock()));
+    @DisplayName("GET /professores/nome/{nome} → 200 quando existe")
+    void testGetByNomeFound() {
+        Professor p = buildProfessor();
+        when(service.getProfessorByNome("Maria Silva")).thenReturn(Optional.of(p));
 
-        mockMvc.perform(get("/professores/nome/Fulano"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email").value("fulano@teste.com"));
+        ResponseEntity<?> resp = controller.getProfessorByNome("Maria Silva");
+        assertEquals(200, resp.getStatusCodeValue());
+        Optional<?> opt = (Optional<?>) resp.getBody();
+        assertTrue(opt.isPresent());
+        assertEquals(p, opt.get());
     }
 
     @Test
-    @DisplayName("GET /professores/email/{email} - deve retornar professor pelo email")
-    void getProfessorByEmail() throws Exception {
-        Mockito.when(professorService.getProfessorByEmail("fulano@teste.com")).thenReturn(Optional.of(createProfessorMock()));
+    @DisplayName("GET /professores/nome/{nome} → 404 quando não existe")
+    void testGetByNomeNotFound() {
+        when(service.getProfessorByNome("NãoExiste")).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/professores/email/fulano@teste.com"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nome").value("Fulano"));
+        ResponseEntity<?> resp = controller.getProfessorByNome("NãoExiste");
+        assertEquals(404, resp.getStatusCodeValue());
+        assertEquals("Professor não encontrado pelo nome.", resp.getBody());
     }
 
     @Test
-    @DisplayName("POST /professores/save - cria professor com sucesso")
-    void createProfessorSuccess() throws Exception {
-        Professor p = createProfessorMock();
-        Mockito.when(professorService.saveProfessor(any(Professor.class))).thenReturn(p);
+    @DisplayName("GET /professores/email/{email} → 200 quando existe")
+    void testGetByEmailFound() {
+        Professor p = buildProfessor();
+        when(service.getProfessorByEmail("maria@uni.edu")).thenReturn(Optional.of(p));
 
-        mockMvc.perform(post("/professores/save")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(p)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nome").value("Fulano"));
+        ResponseEntity<?> resp = controller.getProfessorByEmail("maria@uni.edu");
+        assertEquals(200, resp.getStatusCodeValue());
+        Optional<?> opt = (Optional<?>) resp.getBody();
+        assertTrue(opt.isPresent());
+        assertEquals(p, opt.get());
     }
 
     @Test
-    @DisplayName("POST /professores/save - retorna erro se campos obrigatórios estiverem faltando")
-    void createProfessorInvalid() throws Exception {
-        Professor p = new Professor(); // vazio
+    @DisplayName("GET /professores/email/{email} → 404 quando não existe")
+    void testGetByEmailNotFound() {
+        when(service.getProfessorByEmail("x@x.com")).thenReturn(Optional.empty());
 
-        mockMvc.perform(post("/professores/save")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(p)))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string("Dados do professor são inválidos."));
+        ResponseEntity<?> resp = controller.getProfessorByEmail("x@x.com");
+        assertEquals(404, resp.getStatusCodeValue());
+        assertEquals("Professor não encontrado pelo email.", resp.getBody());
     }
 
     @Test
-    @DisplayName("PUT /professores/{id} - atualiza professor com sucesso")
-    void updateProfessor() throws Exception {
-        Professor existing = createProfessorMock();
-        Professor updated = createProfessorMock();
-        updated.setNome("Atualizado");
+    @DisplayName("POST /professores/save → 400 quando corpo inválido")
+    void testCreateProfessorBadRequest() {
+        // corpo nulo
+        ResponseEntity<?> resp1 = controller.createProfessor(null);
+        assertEquals(400, resp1.getStatusCodeValue());
+        assertEquals("Dados do professor são inválidos.", resp1.getBody());
 
-        Mockito.when(professorService.getProfessorById(1L)).thenReturn(Optional.of(existing));
-        Mockito.when(professorService.saveProfessor(any(Professor.class))).thenReturn(updated);
-
-        mockMvc.perform(put("/professores/1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updated)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nome").value("Atualizado"));
+        // faltando campos
+        Professor incomplete = new Professor();
+        ResponseEntity<?> resp2 = controller.createProfessor(incomplete);
+        assertEquals(400, resp2.getStatusCodeValue());
     }
 
     @Test
-    @DisplayName("PUT /professores/{id} - retorna erro se professor não encontrado")
-    void updateProfessorNotFound() throws Exception {
-        Mockito.when(professorService.getProfessorById(999L)).thenReturn(Optional.empty());
+    @DisplayName("POST /professores/save → 200 e retorna entidade salva")
+    void testCreateProfessorSuccess() {
+        Professor p = buildProfessor();
+        when(service.saveProfessor(p)).thenReturn(p);
 
-        mockMvc.perform(put("/professores/999")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createProfessorMock())))
-                .andExpect(status().isNotFound())
-                .andExpect(content().string("Professor não encontrado."));
+        ResponseEntity<?> resp = controller.createProfessor(p);
+        assertEquals(200, resp.getStatusCodeValue());
+        assertSame(p, resp.getBody());
     }
 
     @Test
-    @DisplayName("DELETE /professores/deleteById/{id} - remove professor com sucesso")
-    void deleteProfessor() throws Exception {
-        Mockito.when(professorService.getProfessorById(1L)).thenReturn(Optional.of(createProfessorMock()));
-        Mockito.doNothing().when(professorService).deleteProfessor(1L);
+    @DisplayName("PUT /professores/update/{id} → 404 quando não existe")
+    void testUpdateNotFoundFirstVariant() {
+        when(service.getProfessorById(5L)).thenReturn(Optional.empty());
 
-        mockMvc.perform(delete("/professores/deleteById/1"))
-                .andExpect(status().isNoContent());
+        ResponseEntity<?> resp = controller.updateProfessor(new Professor(), 5L);
+        assertEquals(404, resp.getStatusCodeValue());
+        assertEquals("Professor não encontrado.", resp.getBody());
     }
 
     @Test
-    @DisplayName("DELETE /professores/deleteById/{id} - retorna erro se professor não encontrado")
-    void deleteProfessorNotFound() throws Exception {
-        Mockito.when(professorService.getProfessorById(99L)).thenReturn(Optional.empty());
+    @DisplayName("PUT /professores/update/{id} → 200 e salva")
+    void testUpdateSuccessFirstVariant() {
+        Professor existing = buildProfessor();
+        Professor updated = buildProfessor();
+        updated.setNome("Novo Nome");
 
-        mockMvc.perform(delete("/professores/deleteById/99"))
-                .andExpect(status().isNotFound())
-                .andExpect(content().string("Professor não encontrado."));
+        when(service.getProfessorById(10L)).thenReturn(Optional.of(existing));
+        when(service.saveProfessor(updated)).thenReturn(updated);
+
+        ResponseEntity<?> resp = controller.updateProfessor(updated, 10L);
+        assertEquals(200, resp.getStatusCodeValue());
+        assertEquals("Novo Nome", ((Professor) resp.getBody()).getNome());
+    }
+
+    @Test
+    @DisplayName("PUT /professores/{id} → 404 quando não existe (segunda variante)")
+    void testUpdateNotFoundSecondVariant() {
+        when(service.getProfessorById(7L)).thenReturn(Optional.empty());
+
+        ResponseEntity<?> resp = controller.updateProfessor(7L, buildProfessor());
+        assertEquals(404, resp.getStatusCodeValue());
+        assertEquals("Professor não encontrado.", resp.getBody());
+    }
+
+    @Test
+    @DisplayName("PUT /professores/{id} → 200 e atualiza (segunda variante)")
+    void testUpdateSuccessSecondVariant() {
+        Professor existing = buildProfessor();
+        Professor details = new Professor();
+        details.setNome("Outro Nome");
+        details.setEmail("outro@x.com");
+        details.setSenha("nova");
+
+        when(service.getProfessorById(10L)).thenReturn(Optional.of(existing));
+        when(service.saveProfessor(any(Professor.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ResponseEntity<?> resp = controller.updateProfessor(10L, details);
+        assertEquals(200, resp.getStatusCodeValue());
+        Professor body = (Professor) resp.getBody();
+        assertEquals("Outro Nome", body.getNome());
+        assertEquals("outro@x.com", body.getEmail());
+    }
+
+    @Test
+    @DisplayName("DELETE /professores/deleteById/{id} → 204 quando existe")
+    void testDeleteWhenExists() {
+        when(service.getProfessorById(10L)).thenReturn(Optional.of(buildProfessor()));
+        doNothing().when(service).deleteProfessor(10L);
+
+        ResponseEntity<?> resp = controller.deleteProfessor(10L);
+        assertEquals(204, resp.getStatusCodeValue());
+    }
+
+    @Test
+    @DisplayName("DELETE /professores/deleteById/{id} → 404 quando não existe")
+    void testDeleteWhenNotFound() {
+        when(service.getProfessorById(99L)).thenReturn(Optional.empty());
+
+        ResponseEntity<?> resp = controller.deleteProfessor(99L);
+        assertEquals(404, resp.getStatusCodeValue());
+        assertEquals("Professor não encontrado.", resp.getBody());
     }
 }

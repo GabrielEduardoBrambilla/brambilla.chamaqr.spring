@@ -4,6 +4,8 @@ import com.brambilla.chamadaqr.Entity.Chamada;
 import com.brambilla.chamadaqr.Repository.ChamadaRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,7 +16,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest
+@ExtendWith(org.mockito.junit.jupiter.MockitoExtension.class)
 public class ChamadaServiceTest {
 
     @Autowired

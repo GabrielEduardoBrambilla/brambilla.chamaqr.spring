@@ -4,13 +4,18 @@ import com.brambilla.chamadaqr.Entity.Aluno;
 import com.brambilla.chamadaqr.Entity.Turma;
 import com.brambilla.chamadaqr.Repository.AlunoRepository;
 import com.brambilla.chamadaqr.Repository.TurmaRepository;
+import com.brambilla.chamadaqr.auth.LoginRepository;
 import jakarta.validation.ValidationException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.*;
 
@@ -18,17 +23,21 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 public class AlunoServiceTest {
 
-    @Autowired
+    @Mock
+    private AlunoRepository alunoRepository;
+    @Mock
+    private TurmaRepository turmaRepository;
+    @Mock
+    private LoginRepository loginRepository;
+
+    @InjectMocks
     private AlunoService alunoService;
 
-    @MockBean
-    private AlunoRepository alunoRepository;
-
-    @MockBean
-    private TurmaRepository turmaRepository;
+    private Aluno alunoValido;
+    private Turma turmaExistente;
 
     @Test
     @DisplayName("Cena 01 - Deve salvar aluno com dados válidos")

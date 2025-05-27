@@ -2,165 +2,165 @@ package com.brambilla.chamadaqr.Controller;
 
 import com.brambilla.chamadaqr.Entity.Qrcode;
 import com.brambilla.chamadaqr.Service.QrcodeService;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import org.mockito.Mockito;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
-
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.http.ResponseEntity;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 import java.util.Optional;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+class QrcodeControllerTest {
 
-@WebMvcTest(QrcodeController.class)
-public class QrcodeControllerTest {
+    private QrcodeController controller;
+    private QrcodeService service;
 
-    @Autowired
-    private MockMvc mockMvc;
+    @BeforeEach
+    void setUp() {
+        service = mock(QrcodeService.class);
+        controller = new QrcodeController();
+        ReflectionTestUtils.setField(controller, "qrCodeService", service);
+    }
 
-    @MockBean
-    private QrcodeService qrCodeService;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    private Qrcode createMockQrcode() {
-        Qrcode qrcode = new Qrcode();
-        qrcode.setId(1L);
-        qrcode.setHash("abc123hash");
-        qrcode.setCreatedAt("2024-05-01");
-        return qrcode;
+    private Qrcode buildQrcode() {
+        Qrcode q = new Qrcode();
+        q.setId(77L);
+        q.setHash("abc123");
+        q.setCreatedAt("2025-05-26T20:00");
+        return q;
     }
 
     @Test
-    @DisplayName("GET /qrcode - retorna todos os QR Codes")
-    void getAllQRCodes() throws Exception {
-        Mockito.when(qrCodeService.getAllQRCodes()).thenReturn(List.of(createMockQrcode()));
+    @DisplayName("GET /qrcode → 200 + lista completa")
+    void testGetAllQRCodes() {
+        Qrcode q = buildQrcode();
+        when(service.getAllQRCodes()).thenReturn(List.of(q));
 
-        mockMvc.perform(get("/qrcode"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].hash").value("abc123hash"));
+        ResponseEntity<?> resp = controller.getAllQRCodes();
+        assertEquals(200, resp.getStatusCodeValue());
+        @SuppressWarnings("unchecked")
+        List<Qrcode> list = (List<Qrcode>) resp.getBody();
+        assertNotNull(list);
+        assertEquals(1, list.size());
+        assertEquals(77L, list.get(0).getId());
     }
 
     @Test
-    @DisplayName("GET /qrcode/{id} - retorna QR Code por ID")
-    void getQrcodeById() throws Exception {
-        Mockito.when(qrCodeService.getQRCodeById(1L)).thenReturn(Optional.of(createMockQrcode()));
+    @DisplayName("GET /qrcode/{id} → 200 quando existe")
+    void testGetByIdFound() {
+        Qrcode q = buildQrcode();
+        when(service.getQRCodeById(77L)).thenReturn(Optional.of(q));
 
-        mockMvc.perform(get("/qrcode/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.hash").value("abc123hash"));
+        ResponseEntity<?> resp = controller.getQrcodeById(77L);
+        assertEquals(200, resp.getStatusCodeValue());
+        Optional<?> opt = (Optional<?>) resp.getBody();
+        assertTrue(opt.isPresent());
+        assertEquals(q, opt.get());
     }
 
     @Test
-    @DisplayName("GET /qrcode/{id} - QR Code não encontrado")
-    void getQrcodeByIdNotFound() throws Exception {
-        Mockito.when(qrCodeService.getQRCodeById(999L)).thenReturn(Optional.empty());
+    @DisplayName("GET /qrcode/{id} → 404 quando não existe")
+    void testGetByIdNotFound() {
+        when(service.getQRCodeById(1L)).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/qrcode/999"))
-                .andExpect(status().isNotFound())
-                .andExpect(content().string("QR Code não encontrado."));
-    }
-
-
-    @Test
-    @DisplayName("GET /qrcode/createdAt/{createdAt} - retorna QR Codes por data")
-    void getQRCodeByCreatedAt() throws Exception {
-        Mockito.when(qrCodeService.getQRCodeByCreatedAt("2024-05-01"))
-                .thenReturn(List.of(createMockQrcode()));
-
-        mockMvc.perform(get("/qrcode/createdAt/2024-05-01"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].hash").value("abc123hash"));
+        ResponseEntity<?> resp = controller.getQrcodeById(1L);
+        assertEquals(404, resp.getStatusCodeValue());
+        assertEquals("QR Code não encontrado.", resp.getBody());
     }
 
     @Test
-    @DisplayName("GET /qrcode/createdAt/{createdAt} - nenhum encontrado")
-    void getQRCodeByCreatedAtNotFound() throws Exception {
-        Mockito.when(qrCodeService.getQRCodeByCreatedAt("2023-01-01"))
-                .thenReturn(List.of());
+    @DisplayName("GET /qrcode/createdAt/{data} → 200 quando há resultados")
+    void testGetByCreatedAtFound() {
+        Qrcode q = buildQrcode();
+        when(service.getQRCodeByCreatedAt("2025-05-26T20:00")).thenReturn(List.of(q));
 
-        mockMvc.perform(get("/qrcode/createdAt/2023-01-01"))
-                .andExpect(status().isNotFound())
-                .andExpect(content().string("Nenhum QR Code encontrado."));
+        ResponseEntity<?> resp = controller.getQRCodeByCreatedAt("2025-05-26T20:00");
+        assertEquals(200, resp.getStatusCodeValue());
+        @SuppressWarnings("unchecked")
+        List<Qrcode> list = (List<Qrcode>) resp.getBody();
+        assertEquals(1, list.size());
     }
 
     @Test
-    @DisplayName("GET /qrcode/hash/{hash} - retorna QR Code por hash")
-    void getQRCodeByHash() throws Exception {
-        Mockito.when(qrCodeService.getQRCodeByHash("abc123hash"))
-                .thenReturn(Optional.of(createMockQrcode()));
+    @DisplayName("GET /qrcode/createdAt/{data} → 404 quando vazio")
+    void testGetByCreatedAtNotFound() {
+        when(service.getQRCodeByCreatedAt("x")).thenReturn(List.of());
 
-        mockMvc.perform(get("/qrcode/hash/abc123hash"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.createdAt").value("2024-05-01"));
+        ResponseEntity<?> resp = controller.getQRCodeByCreatedAt("x");
+        assertEquals(404, resp.getStatusCodeValue());
+        assertEquals("Nenhum QR Code encontrado.", resp.getBody());
     }
 
     @Test
-    @DisplayName("GET /qrcode/hash/{hash} - hash não encontrado")
-    void getQRCodeByHashNotFound() throws Exception {
-        Mockito.when(qrCodeService.getQRCodeByHash("inexistente"))
-                .thenReturn(Optional.empty());
+    @DisplayName("GET /qrcode/hash/{hash} → 200 quando existe")
+    void testGetByHashFound() {
+        Qrcode q = buildQrcode();
+        when(service.getQRCodeByHash("abc123")).thenReturn(Optional.of(q));
 
-        mockMvc.perform(get("/qrcode/hash/inexistente"))
-                .andExpect(status().isNotFound())
-                .andExpect(content().string("QR Code não encontrado pelo hash."));
+        ResponseEntity<?> resp = controller.getQRCodeByHash("abc123");
+        assertEquals(200, resp.getStatusCodeValue());
+        Optional<?> opt = (Optional<?>) resp.getBody();
+        assertTrue(opt.isPresent());
+        assertEquals(q, opt.get());
     }
 
     @Test
-    @DisplayName("POST /qrcode - cria QR Code com sucesso")
-    void createQRCode() throws Exception {
-        Qrcode qr = createMockQrcode();
-        Mockito.when(qrCodeService.saveQRCode(any(Qrcode.class))).thenReturn(qr);
+    @DisplayName("GET /qrcode/hash/{hash} → 404 quando não existe")
+    void testGetByHashNotFound() {
+        when(service.getQRCodeByHash("zzz")).thenReturn(Optional.empty());
 
-        mockMvc.perform(post("/qrcode")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(qr)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.hash").value("abc123hash"));
+        ResponseEntity<?> resp = controller.getQRCodeByHash("zzz");
+        assertEquals(404, resp.getStatusCodeValue());
+        assertEquals("QR Code não encontrado pelo hash.", resp.getBody());
     }
 
     @Test
-    @DisplayName("POST /qrcode - dados inválidos")
-    void createQRCodeInvalid() throws Exception {
-        mockMvc.perform(post("/qrcode")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string("Dados inválidos para criação do QR Code."));
+    @DisplayName("POST /qrcode → 400 quando corpo inválido")
+    void testCreateBadRequest() {
+        // corpo nulo
+        ResponseEntity<?> r1 = controller.createQrcode(null);
+        assertEquals(400, r1.getStatusCodeValue());
+        assertEquals("Dados inválidos para criação do QR Code.", r1.getBody());
+
+        // hash nulo
+        Qrcode incomplete = new Qrcode();
+        ResponseEntity<?> r2 = controller.createQrcode(incomplete);
+        assertEquals(400, r2.getStatusCodeValue());
     }
 
     @Test
-    @DisplayName("DELETE /qrcode/{id} - remove QR Code")
-    void deleteQRCodeSuccess() throws Exception {
-        Mockito.when(qrCodeService.getQRCodeById(1L)).thenReturn(Optional.of(createMockQrcode()));
-        doNothing().when(qrCodeService).deleteQRCode(1L);
+    @DisplayName("POST /qrcode → 200 e retorna QR salvo")
+    void testCreateSuccess() {
+        Qrcode q = buildQrcode();
+        when(service.saveQRCode(q)).thenReturn(q);
 
-        mockMvc.perform(delete("/qrcode/1"))
-                .andExpect(status().isNoContent());
+        ResponseEntity<?> resp = controller.createQrcode(q);
+        assertEquals(200, resp.getStatusCodeValue());
+        assertSame(q, resp.getBody());
     }
 
     @Test
-    @DisplayName("DELETE /qrcode/{id} - QR Code não encontrado")
-    void deleteQRCodeNotFound() throws Exception {
-        Mockito.when(qrCodeService.getQRCodeById(99L)).thenReturn(Optional.empty());
+    @DisplayName("DELETE /qrcode/{id} → 204 quando existe")
+    void testDeleteWhenExists() {
+        Qrcode q = buildQrcode();
+        when(service.getQRCodeById(77L)).thenReturn(Optional.of(q));
+        doNothing().when(service).deleteQRCode(77L);
 
-        mockMvc.perform(delete("/qrcode/99"))
-                .andExpect(status().isNotFound())
-                .andExpect(content().string("QR Code não encontrado."));
+        ResponseEntity<?> resp = controller.deleteQRCode(77L);
+        assertEquals(204, resp.getStatusCodeValue());
+    }
+
+    @Test
+    @DisplayName("DELETE /qrcode/{id} → 404 quando não existe")
+    void testDeleteNotFound() {
+        when(service.getQRCodeById(99L)).thenReturn(Optional.empty());
+
+        ResponseEntity<?> resp = controller.deleteQRCode(99L);
+        assertEquals(404, resp.getStatusCodeValue());
+        assertEquals("QR Code não encontrado.", resp.getBody());
     }
 }
