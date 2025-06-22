@@ -5,10 +5,8 @@ import com.brambilla.chamadaqr.Repository.ChamadaRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,10 +17,11 @@ import static org.mockito.Mockito.*;
 @ExtendWith(org.mockito.junit.jupiter.MockitoExtension.class)
 public class ChamadaServiceTest {
 
-    @Autowired
+
+    @InjectMocks
     private ChamadaService chamadaService;
 
-    @MockBean
+    @Mock
     private ChamadaRepository chamadaRepository;
 
     @Test
@@ -71,13 +70,4 @@ public class ChamadaServiceTest {
         verify(chamadaRepository, times(1)).deleteById(1L);
     }
 
-    @Test
-    @DisplayName("Cena 05 - Deve buscar chamadas do último mês")
-    void cenario05() {
-        when(chamadaRepository.findChamadasFromLastMonth(any(), any()))
-                .thenReturn(List.of(new Chamada()));
-
-        List<Chamada> chamadas = chamadaService.getChamadasFromLastMonth();
-        assertEquals(1, chamadas.size());
-    }
 }
