@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @RequestMapping("/alunos")
@@ -18,6 +21,14 @@ public class AlunoController {
 
     @Autowired
     private AlunoService alunoService;
+
+
+
+    @GetMapping("/findAllPaged")
+    public ResponseEntity<Page<Aluno>> getAllAlunosPaged(Pageable pageable) {
+        Page<Aluno> alunos = alunoService.getAllAlunosPaged(pageable);
+        return ResponseEntity.ok(alunos);
+    }
 
     @GetMapping("/findAll")
     public ResponseEntity<?> getAllAlunos() {

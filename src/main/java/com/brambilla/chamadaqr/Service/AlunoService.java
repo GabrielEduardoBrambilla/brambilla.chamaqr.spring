@@ -17,6 +17,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 @Service
 public class AlunoService {
     @Autowired
@@ -26,6 +29,10 @@ public class AlunoService {
 
     @Autowired
     private TurmaRepository turmaRepository;
+
+    public Page<Aluno> getAllAlunosPaged(Pageable pageable) {
+        return alunoRepository.findAll(pageable);
+    }
 
     public List<Aluno> getAllAlunos() {
         return alunoRepository.findAll();
