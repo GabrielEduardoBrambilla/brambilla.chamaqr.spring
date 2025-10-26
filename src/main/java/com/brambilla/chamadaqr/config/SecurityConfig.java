@@ -1,5 +1,6 @@
 package com.brambilla.chamadaqr.config;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -16,6 +17,9 @@ import java.util.Arrays;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    @Autowired
+    private KeycloakJwtAuthenticationConverter keycloakJwtAuthenticationConverter;
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -27,16 +31,22 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**", "/public/**").permitAll()
 
                         // Check for authority without ROLE_ prefix
+                        // O converter adiciona as roles COM e SEM o prefixo ROLE_
                         .requestMatchers("/professores/**").hasAnyAuthority("PROFESSOR", "ROLE_PROFESSOR", "ADMIN", "ROLE_ADMIN")
                         .requestMatchers("/alunos/**").hasAnyAuthority("PROFESSOR", "ROLE_PROFESSOR", "ALUNO", "ROLE_ALUNO", "ADMIN", "ROLE_ADMIN")
 
                         // All other requests need authentication
                         .anyRequest().authenticated()
                 )
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt());
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(jwt -> jwt
+                                .jwtAuthenticationConverter(keycloakJwtAuthenticationConverter)
+                        )
+                );
 
         return http.build();
     }
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
