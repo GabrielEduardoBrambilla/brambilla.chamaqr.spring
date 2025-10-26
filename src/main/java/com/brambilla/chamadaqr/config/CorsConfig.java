@@ -21,13 +21,14 @@ public class CorsConfig {
 
         // Allow specific origins (your frontend URLs)
         config.setAllowedOrigins(Arrays.asList(
-                "http://localhost:4200",           // Angular dev server
-                "http://192.168.56.103",           // Your Alpine server HTTP
-                "https://192.168.56.103",          // Your Alpine server HTTPS
-                "http://192.168.56.103:8080",      // Tomcat HTTP
-                "https://192.168.56.103:8443",     // Tomcat HTTPS
-                "https://sistema1.net",            // Your domain
-                "http://sistema1.net"              // Your domain HTTP
+                "http://localhost:4200",
+                "https://localhost:4200",
+                "http://192.168.56.103",
+                "https://192.168.56.103",
+                "http://192.168.56.103:8080",
+                "https://192.168.56.103:8443",
+                "http://192.168.56.102",
+                "https://192.168.56.102"
         ));
 
         // Allow all headers
