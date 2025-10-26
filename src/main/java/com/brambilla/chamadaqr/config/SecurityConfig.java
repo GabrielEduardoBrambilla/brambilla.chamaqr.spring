@@ -27,7 +27,7 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**", "/public/**").permitAll()
 
                         // Check for authority without ROLE_ prefix
-                        .requestMatchers("/professores/**").hasAnyRole("PROFESSOR", "ROLE_PROFESSOR", "ADMIN", "ROLE_ADMIN")
+                        .requestMatchers("/professores/**").hasAnyAuthority("PROFESSOR", "ROLE_PROFESSOR", "ADMIN", "ROLE_ADMIN")
                         .requestMatchers("/alunos/**").hasAnyAuthority("PROFESSOR", "ROLE_PROFESSOR", "ALUNO", "ROLE_ALUNO", "ADMIN", "ROLE_ADMIN")
 
                         // All other requests need authentication
