@@ -19,6 +19,7 @@ public class ProfessorController {
     private ProfessorService professorService;
 
     @GetMapping("/findAll")
+    @PreAuthorize("hasAnyRole('PROFESSOR')")
     public ResponseEntity<?> getAllProfessores() {
 
         List<Professor> professores = professorService.getAllProfessores();

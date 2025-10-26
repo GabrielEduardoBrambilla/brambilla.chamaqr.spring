@@ -11,7 +11,8 @@
 	<groupId>com.brambilla</groupId>
 	<artifactId>chamadaqr</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>chamadaqr</name>
+    <packaging>war</packaging>
+    <name>chamadaqr</name>
 	<description>Aplicacao de chamadas automatizadas</description>
 	<url/>
 	<licenses>
@@ -31,6 +32,21 @@
 		<maven.compiler.target>17</maven.compiler.target>
 	</properties>
 	<dependencies>
+        <!-- OAuth2 Resource Server para validar JWT -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-tomcat</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <!-- WebClient para fazer requisições HTTP ao Keycloak -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -83,7 +99,8 @@
 	</dependencies>
 
 	<build>
-		<pluginManagement>
+        <finalName>chamadaqr</finalName>
+        <pluginManagement>
 			<plugins>
 				<plugin>
 					<groupId>org.jacoco</groupId>

@@ -14,15 +14,12 @@ import org.springframework.web.bind.annotation.RestController;
 @CrossOrigin(origins = "*")
 public class LoginController {
 
-	@Autowired
-	private LoginService loginService;
+    @Autowired
+    private LoginService loginService;
 
-	@PostMapping
-	public ResponseEntity<String> logar(@RequestBody Login login) {
-
-		String token = loginService.logar(login);
-		return new ResponseEntity<>(token, HttpStatus.OK);
-		
-	}
-
+    @PostMapping
+    public ResponseEntity<LoginResponse> logar(@RequestBody LoginRequest loginRequest) {
+        LoginResponse response = loginService.logar(loginRequest);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
 }
