@@ -28,7 +28,9 @@ public class CorsConfig {
                 "http://192.168.56.103:8080",
                 "https://192.168.56.103:8443",
                 "http://192.168.56.102",
-                "https://192.168.56.102"
+                "https://192.168.56.102",
+                "https://sistema1.net",
+                "http://sistema1.net"
         ));
 
         // Allow all headers
