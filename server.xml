@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ═════════════════════════════════════════════════════════════
+  Tomcat Server Configuration - ChamadaQR Backend
+  ═════════════════════════════════════════════════════════════
+  
+  Configuração customizada para:
+  - SSL/TLS na porta 8443
+  - HTTP/2 habilitado
+  - Certificado PEM (fullchain.pem + wildcard.key)
+  - Segurança aprimorada
+  
+  ═════════════════════════════════════════════════════════════
+-->
+<Server port="8005" shutdown="SHUTDOWN">
+  
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- LISTENERS                                               -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  
+  <Listener className="org.apache.catalina.startup.VersionLoggerListener" />
+  <Listener className="org.apache.catalina.core.AprLifecycleListener" />
+  <Listener className="org.apache.catalina.core.JreMemoryLeakPreventionListener" />
+  <Listener className="org.apache.catalina.mbeans.GlobalResourcesLifecycleListener" />
+  <Listener className="org.apache.catalina.core.ThreadLocalLeakPreventionListener" />
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- GLOBAL JNDI RESOURCES                                   -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  
+  <GlobalNamingResources>
+    <Resource name="UserDatabase" 
+              auth="Container"
+              type="org.apache.catalina.UserDatabase"
+              description="User database that can be updated and saved"
+              factory="org.apache.catalina.users.MemoryUserDatabaseFactory"
+              pathname="conf/tomcat-users.xml" />
+  </GlobalNamingResources>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- SERVICE: Catalina                                       -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  
+  <Service name="Catalina">
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- CONNECTOR: HTTPS (Port 8443) - SSL/TLS ATIVO           -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    
+    <Connector port="8443" 
+               protocol="org.apache.coyote.http11.Http11NioProtocol"
+               maxThreads="150" 
+               SSLEnabled="true"
+               scheme="https"
+               secure="true"
+               connectionTimeout="20000"
+               maxHttpHeaderSize="8192">
+        
+        <!-- HTTP/2 Protocol Upgrade -->
+        <UpgradeProtocol className="org.apache.coyote.http2.Http2Protocol" />
+        
+        <!-- SSL/TLS Configuration -->
+        <SSLHostConfig protocols="TLSv1.2,TLSv1.3"
+                       certificateVerification="none"
+                       ciphers="TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,TLS_DHE_RSA_WITH_AES_256_GCM_SHA384">
+            
+            <!-- Certificate Configuration -->
+            <Certificate certificateFile="/usr/local/tomcat/conf/ssl/fullchain.pem"
+                         certificateKeyFile="/usr/local/tomcat/conf/ssl/wildcard.key"
+                         type="RSA" />
+        </SSLHostConfig>
+    </Connector>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- ENGINE: Catalina                                        -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    
+    <Engine name="Catalina" defaultHost="localhost">
+
+      <!-- ═══════════════════════════════════════════════════ -->
+      <!-- REALM: Lock Out Protection                          -->
+      <!-- ═══════════════════════════════════════════════════ -->
+      
+      <Realm className="org.apache.catalina.realm.LockOutRealm">
+        <Realm className="org.apache.catalina.realm.UserDatabaseRealm"
+               resourceName="UserDatabase"/>
+      </Realm>
+
+      <!-- ═══════════════════════════════════════════════════ -->
+      <!-- HOST: localhost                                     -->
+      <!-- ═══════════════════════════════════════════════════ -->
+      
+      <Host name="localhost"  
+            appBase="webapps"
+            unpackWARs="true" 
+            autoDeploy="false"
+            deployOnStartup="true">
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- ACCESS LOG VALVE                                 -->
+        <!-- ═══════════════════════════════════════════════ -->
+        
+        <Valve className="org.apache.catalina.valves.AccessLogValve" 
+               directory="logs"
+               prefix="localhost_access_log" 
+               suffix=".txt"
+               pattern="%h %l %u %t &quot;%r&quot; %s %b %D" 
+               resolveHosts="false"/>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- ERROR REPORT VALVE (Customizado)                 -->
+        <!-- ═══════════════════════════════════════════════ -->
+        
+        <Valve className="org.apache.catalina.valves.ErrorReportValve"
+               showReport="false"
+               showServerInfo="false" />
+
+      </Host>
+    </Engine>
+  </Service>
+</Server>
