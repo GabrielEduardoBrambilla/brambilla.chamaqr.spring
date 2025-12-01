@@ -120,7 +120,7 @@ EXPOSE 8443
 # ═════════════════════════════════════════════════════════════
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD curl --fail --insecure https://localhost:8443/chamadaqr/api/message || exit 1
+  CMD curl --fail --insecure https://localhost:8443/chamadaqr/ || exit 1
 
 # ═════════════════════════════════════════════════════════════
 # ENTRYPOINT & CMD

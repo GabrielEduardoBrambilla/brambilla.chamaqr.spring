@@ -1,0 +1,93 @@
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: meu_keycloak_mysql
+    
+    # MUDOU: start ao invés de start-dev
+    command: start
+    
+    environment:
+      # === ADMIN CREDENTIALS ===
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      
+      # === DATABASE CONFIG ===
+      KC_DB: mariadb
+      KC_DB_URL_HOST: 192.168.56.101
+      KC_DB_URL_PORT: 3306
+      KC_DB_URL_DATABASE: keycloak
+      KC_DB_USERNAME: keycloak_user
+      KC_DB_PASSWORD: senha_segura_123
+      
+      # === HOSTNAME & TLS CONFIG ===
+      # Desabilita verificação estrita de hostname (para ambientes locais)
+      KC_HOSTNAME: keycloak.projetomensal.com.br
+      KC_HOSTNAME_STRICT: 'false'
+      KC_HOSTNAME_STRICT_HTTPS: 'false'
+      
+      
+      # === CERTIFICADOS TLS ===
+      # Caminhos dos certificados dentro do container
+      KC_HTTPS_CERTIFICATE_FILE: /root/keycloak/conf/fullchain.pem
+      KC_HTTPS_CERTIFICATE_KEY_FILE: /root/keycloak/conf/wildcard.key
+      
+      # === PROXY CONFIG (importante para ambientes atrás de proxy/load balancer) ===
+      KC_PROXY: edge
+      
+      # === HTTP CONFIG ===
+      # Permite acesso HTTP na porta 8080 (útil para troubleshooting)
+      KC_HTTP_ENABLED: 'true'
+      
+    ports:
+      # Porta HTTPS (8443 interno → 5001 externo)
+      - "5001:8443"
+      # Porta HTTP (8080 interno → 5002 externo) - OPCIONAL para troubleshooting
+      - "5002:8080"
+    
+    volumes:
+      # Monta os certificados no container
+      - ./certs/fullchain.pem:/root/keycloak/conf/fullchain.pem:ro
+      - ./certs/wildcard.key:/root/keycloak/conf/wildcard.key:ro
+    
+    restart: unless-stopped
+    
+    # Healthcheck para garantir que o serviço está funcionando
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f https://localhost:8443/health/ready -k || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+# ==========================================
+# EXPLICAÇÃO DAS MUDANÇAS:
+# ==========================================
+#
+# 1. COMMAND: start-dev → start
+#    - Modo produção ativa validações de segurança
+#
+# 2. PORTAS:
+#    - 5001:8443 → HTTPS (principal)
+#    - 5002:8080 → HTTP (opcional, para troubleshooting)
+#
+# 3. CERTIFICADOS:
+#    - fullchain.pem → Certificado público
+#    - wildcard.key → Chave privada
+#
+# 4. HOSTNAME:
+#    - KC_HOSTNAME: 192.168.56.103
+#    - KC_HOSTNAME_STRICT: false (necessário para IPs)
+#
+# 5. PROXY:
+#    - KC_PROXY: edge (recomendado para ambientes com proxy)
+#
+# 6. VOLUMES:
+#    - :ro (read-only) → Segurança adicional
+#
+# ==========================================
+# APÓS INICIAR:
+# ==========================================
+# URL HTTPS: https://192.168.56.103:5001
+# URL HTTP:  http://192.168.56.103:5002 (se habilitado)
+# Admin:     https://192.168.56.103:5001/admin
+# ==========================================

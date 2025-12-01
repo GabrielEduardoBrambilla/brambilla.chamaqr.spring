@@ -1,0 +1,20 @@
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: meu_keycloak_mysql
+    command: 
+      - start-dev
+      - --db=mariadb
+      - --db-url-host=192.168.56.101
+      - --db-url-port=3306
+      - --db-url-database=keycloak
+      - --db-username=keycloak_user
+      - --db-password=senha_segura_123
+      - --http-enabled=true
+      - --hostname-strict=false
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "5001:8080"
+    restart: "no"
