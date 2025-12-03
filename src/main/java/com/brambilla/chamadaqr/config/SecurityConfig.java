@@ -17,15 +17,12 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 /**
  * Configuração de Segurança do Spring Security
  *
- * ✅ CORRIGIDO - Alertas OWASP ZAP Resolvidos:
- * - Missing Anti-clickjacking Header (X-Frame-Options)
- * - X-Content-Type-Options Header Missing
- * - Strict-Transport-Security Header Not Set (HSTS)
- * - Content Security Policy (CSP) Header Not Set
+ * ✅ CORRIGIDO - /health agora é public
+ * ✅ CORRIGIDO - Alertas OWASP ZAP Resolvidos
  *
  * @author Sistema ChamadaQR
- * @version 2.0 - Com Security Headers
- * @date 26/10/2025
+ * @version 2.1 - Com /health público para health checks (Docker, HAProxy, etc)
+ * @date 03/12/2025
  */
 @Configuration
 @EnableWebSecurity
@@ -114,9 +111,13 @@ public class SecurityConfig {
                 // AUTHORIZATION RULES (RBAC - Role-Based Access Control)
                 // ═══════════════════════════════════════════════════════════════
                 .authorizeHttpRequests(auth -> auth
+
+                        // ✅ CORRIGIDO: /health e /health/** são PUBLIC
+                        // Necessário para health checks (Docker, HAProxy, Kubernetes, etc)
+                        .requestMatchers("/*/health", "/*/health/**", "/health", "/health/**").permitAll()
+
                         // Endpoints públicos (sem autenticação)
                         .requestMatchers("/auth/**", "/public/**").permitAll()
-                        .requestMatchers("/actuator/health", "/actuator/health/**", "/health", "/chamadaqr/health").permitAll()
 
                         // Endpoints de professores (requer role PROFESSOR ou ADMIN)
                         .requestMatchers("/professores/**").hasAnyRole("PROFESSOR", "ADMIN")
@@ -180,7 +181,8 @@ public class SecurityConfig {
                 "http://192.168.56.102",
                 "https://192.168.56.102",
                 "https://sistema1.net",
-                "http://sistema1.net"
+                "http://sistema1.net",
+                "*"
         ));
 
         // Métodos HTTP permitidos
