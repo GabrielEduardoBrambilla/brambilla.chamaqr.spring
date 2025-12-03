@@ -38,10 +38,12 @@ RUN rm -rf /usr/local/tomcat/webapps/*
 RUN mkdir -p /opt/tomcat/conf/ssl
 
 # Copy SSL certificates (adjust these based on your actual files)
-COPY ssl_certs/fullchain.pem /opt/tomcat/conf/ssl/
-COPY ssl_certs/wildcard.key /opt/tomcat/conf/ssl/
-COPY ssl_certs/backend.p12 /opt/tomcat/conf/ssl/
+COPY fullchain.pem /opt/tomcat/conf/ssl/
+COPY wildcard.key /opt/tomcat/conf/ssl/
+COPY backend.p12 /opt/tomcat/conf/ssl/
 
+RUN chmod 600 /opt/tomcat/conf/ssl/*.key && \
+    chmod 644 /opt/tomcat/conf/ssl/*.pem
 # Copy Tomcat configuration
 COPY server.xml /usr/local/tomcat/conf/
 
