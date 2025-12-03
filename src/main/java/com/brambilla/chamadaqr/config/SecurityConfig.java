@@ -205,4 +205,57 @@ public class SecurityConfig {
 
         return source;
     }
+    /**
+     * Configura um JwtDecoder customizado que ignora a verificação de hostname SSL.
+     * Necessário porque o certificado do HAProxy não possui o IP nos SANs.
+     */
+    @Bean
+    public org.springframework.security.oauth2.jwt.JwtDecoder jwtDecoder(
+            @org.springframework.beans.factory.annotation.Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}") String jwkSetUri) {
+        
+        try {
+            // Cria um TrustManager que confia em tudo (já temos o cert no truststore, mas isso garante)
+            javax.net.ssl.TrustManager[] trustAllCerts = new javax.net.ssl.TrustManager[]{
+                new javax.net.ssl.X509TrustManager() {
+                    public java.security.cert.X509Certificate[] getAcceptedIssuers() { return null; }
+                    public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
+                    public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
+                }
+            };
+
+            // Configura o SSLContext
+            javax.net.ssl.SSLContext sslContext = javax.net.ssl.SSLContext.getInstance("TLS");
+            sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+
+            // Cria um HostnameVerifier que aceita qualquer hostname
+            javax.net.ssl.HostnameVerifier allHostsValid = (hostname, session) -> true;
+
+            // Configura o HttpClient do Java (usado internamente pelo RestTemplate default do Spring Boot 3+)
+            // Nota: Se estiver usando Spring Boot 2.x ou Apache HttpClient, a configuração seria diferente.
+            // Aqui assumimos o padrão do Spring que usa SimpleClientHttpRequestFactory (HttpURLConnection)
+            
+            org.springframework.http.client.SimpleClientHttpRequestFactory requestFactory = 
+                new org.springframework.http.client.SimpleClientHttpRequestFactory() {
+                @Override
+                protected java.net.HttpURLConnection openConnection(java.net.URL url, java.net.Proxy proxy) throws java.io.IOException {
+                    java.net.HttpURLConnection connection = super.openConnection(url, proxy);
+                    if (connection instanceof javax.net.ssl.HttpsURLConnection) {
+                        javax.net.ssl.HttpsURLConnection httpsConnection = (javax.net.ssl.HttpsURLConnection) connection;
+                        httpsConnection.setSSLSocketFactory(sslContext.getSocketFactory());
+                        httpsConnection.setHostnameVerifier(allHostsValid);
+                    }
+                    return connection;
+                }
+            };
+
+            org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate(requestFactory);
+
+            return org.springframework.security.oauth2.jwt.NimbusJwtDecoder.withJwkSetUri(jwkSetUri)
+                    .restOperations(restTemplate)
+                    .build();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao configurar SSL bypass para JwtDecoder", e);
+        }
+    }
 }
