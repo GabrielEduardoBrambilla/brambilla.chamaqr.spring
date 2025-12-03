@@ -1,9 +1,13 @@
 package com.brambilla.chamadaqr.auth;
 
 import com.brambilla.chamadaqr.config.KeycloakProperties;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -11,6 +15,9 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
+import reactor.netty.http.client.HttpClient;
+
+import javax.net.ssl.SSLException;
 
 @Service
 public class LoginService {
@@ -21,7 +28,26 @@ public class LoginService {
     private final WebClient webClient;
 
     public LoginService() {
-        this.webClient = WebClient.builder().build();
+        try {
+            // Create SSL context that trusts all certificates (for development only!)
+            SslContext sslContext = SslContextBuilder
+                    .forClient()
+                    .trustManager(InsecureTrustManagerFactory.INSTANCE)
+                    .build();
+
+            // Create HTTP client with custom SSL context
+            HttpClient httpClient = HttpClient.create()
+                    .secure(sslSpec -> sslSpec.sslContext(sslContext));
+
+            // Build WebClient with custom HTTP client
+            this.webClient = WebClient.builder()
+                    .clientConnector(new ReactorClientHttpConnector(httpClient))
+                    .build();
+
+            System.out.println("WebClient configured to trust all SSL certificates (DEVELOPMENT ONLY!)");
+        } catch (SSLException e) {
+            throw new RuntimeException("Failed to configure SSL for WebClient", e);
+        }
     }
 
     public LoginResponse logar(LoginRequest loginRequest) {
