@@ -23,12 +23,15 @@ public class CorsConfig {
         config.setAllowedOrigins(Arrays.asList(
                 "http://localhost:4200",
                 "https://localhost:4200",
+                "http://localhost:8080",
+                "https://localhost:8443",
                 "http://192.168.56.103",
                 "https://192.168.56.103",
                 "http://192.168.56.103:8080",
                 "https://192.168.56.103:8443",
                 "http://192.168.56.102",
                 "https://192.168.56.102",
+                "https://192.168.56.104",
                 "https://sistema1.net",
                 "http://sistema1.net"
         ));

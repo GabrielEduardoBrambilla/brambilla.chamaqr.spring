@@ -116,6 +116,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Endpoints públicos (sem autenticação)
                         .requestMatchers("/auth/**", "/public/**").permitAll()
+                        .requestMatchers("/actuator/health", "/actuator/health/**", "/health", "/chamadaqr/health").permitAll()
 
                         // Endpoints de professores (requer role PROFESSOR ou ADMIN)
                         .requestMatchers("/professores/**").hasAnyRole("PROFESSOR", "ADMIN")

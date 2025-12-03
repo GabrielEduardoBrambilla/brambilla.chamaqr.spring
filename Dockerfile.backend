@@ -39,12 +39,12 @@ RUN mkdir -p /opt/tomcat/conf/ssl
 RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 # Copy SSL certificates (adjust these based on your actual files)
-COPY fullchain.pem /opt/tomcat/conf/ssl/
-COPY wildcard.key /opt/tomcat/conf/ssl/
-COPY backend.p12 /opt/tomcat/conf/ssl/
+COPY fullchain.pem /opt/tomcat/ssl/
+COPY wildcard.key /opt/tomcat/ssl/
+COPY backend.p12 /opt/tomcat/ssl/
 
-RUN chmod 600 /opt/tomcat/conf/ssl/*.key && \
-    chmod 644 /opt/tomcat/conf/ssl/*.pem
+RUN chmod 600 /opt/tomcat/ssl/*.key && \
+    chmod 644 /opt/tomcat/ssl/*.pem
 
 # Configura o server.xml do Tomcat para usar SSL
 COPY server.xml /usr/local/tomcat/conf/server.xml
@@ -59,5 +59,6 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 # Expose HTTPS port
 EXPOSE 8443
 
-# Start Tomcat
+# Use entrypoint to setup SSL before starting Tomcat
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["catalina.sh", "run"]
