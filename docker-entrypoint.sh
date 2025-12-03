@@ -3,6 +3,16 @@ set -e
 
 # Converte os certificados PEM para PKCS12 se existirem
 if [ -f /opt/tomcat/ssl/fullchain.pem ] && [ -f /opt/tomcat/ssl/wildcard.key ]; then
+    
+    # Importa o certificado para o Truststore do Java (para o Backend confiar no HAProxy/Keycloak)
+    echo "Importing certificate to Java Truststore..."
+    keytool -import -trustcacerts -noprompt \
+        -alias haproxy-ca \
+        -file /opt/tomcat/ssl/fullchain.pem \
+        -keystore "$JAVA_HOME/lib/security/cacerts" \
+        -storepass changeit
+    echo "Certificate imported successfully!"
+
     echo "Convertendo certificados SSL para PKCS12..."
     openssl pkcs12 -export \
         -in /opt/tomcat/ssl/fullchain.pem \
