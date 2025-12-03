@@ -1,130 +1,55 @@
-# ═════════════════════════════════════════════════════════════
-# Multi-Stage Dockerfile - ChamadaQR Backend
-# ═════════════════════════════════════════════════════════════
-# 
-# Stage 1: Build WAR com Maven
-# Stage 2: Runtime Tomcat 11 com SSL
-#
-# Build:   docker build -t chamadaqr-backend:latest -f Dockerfile.backend .
-# Run:     docker run -d -p 8443:8443 --name backend chamadaqr-backend:latest
-# ═════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════
+# SIMPLIFIED DOCKERFILE - CHAMADAQR BACKEND
+# ═══════════════════════════════════════════════════════════════
+# Copy this file to your backend directory as "Dockerfile"
+# No custom scripts needed - just build and run!
+# ═══════════════════════════════════════════════════════════════
 
-# ═════════════════════════════════════════════════════════════
-# STAGE 1: BUILD
-# ═════════════════════════════════════════════════════════════
+# ┌─────────────────────────────────────────────────────────────┐
+# │ STAGE 1: BUILD WITH MAVEN                                   │
+# └─────────────────────────────────────────────────────────────┘
 FROM maven:3.9-eclipse-temurin-17 AS build
-
-LABEL stage=builder
-LABEL description="Build Stage - Maven compilation"
 
 WORKDIR /build
 
-# Copiar POM primeiro (cache Docker layers)
+# Copy Maven files (for better caching)
 COPY pom.xml .
+COPY mvnw* ./
+COPY .mvn .mvn
 
-# Download dependencies (cacheable se POM não mudar)
-RUN mvn dependency:go-offline -B
+# Download dependencies (cached if pom.xml unchanged)
+RUN mvn dependency:go-offline -B || true
 
-# Copiar código fonte
+# Copy source code
 COPY src ./src
 
-# Build do WAR
+# Build WAR file
 RUN mvn clean package -DskipTests -B
 
-# Verificar se WAR foi criado
-RUN ls -lh /build/target/*.war && \
-    test -f /build/target/chamadaqr.war
-
-# ═════════════════════════════════════════════════════════════
-# STAGE 2: RUNTIME
-# ═════════════════════════════════════════════════════════════
+# ┌─────────────────────────────────────────────────────────────┐
+# │ STAGE 2: RUNTIME WITH TOMCAT 11                             │
+# └─────────────────────────────────────────────────────────────┘
 FROM tomcat:11-jre17-temurin
 
-LABEL maintainer="Gabriel Brambilla - ChamadaQR Project"
-LABEL version="1.0"
-LABEL description="ChamadaQR Backend - Spring Boot 3.4.3 on Tomcat 11"
+# Remove default webapps
+RUN rm -rf /usr/local/tomcat/webapps/*
 
-# ═════════════════════════════════════════════════════════════
-# VARIÁVEIS DE AMBIENTE PADRÃO
-# ═════════════════════════════════════════════════════════════
-ENV CATALINA_HOME=/usr/local/tomcat \
-    JAVA_OPTS="-Djava.security.egd=file:/dev/./urandom -Xms512m -Xmx1024m" \
-    MYSQL_HOST=192.168.56.101 \
-    MYSQL_PORT=3306 \
-    MYSQL_DATABASE=chamadaqr \
-    MYSQL_USER=chamadaqr_ssl \
-    MYSQL_PASSWORD=root \
-    KEYCLOAK_URL=https://192.168.56.104 \
-    KEYCLOAK_REALM=chamadaqr \
-    KEYCLOAK_CLIENT_ID=chamadaqr-backend \
-    KEYCLOAK_CLIENT_SECRET=LL5uabWie89PrpToq4SqYZZEAW2jpMNo \
-    SSL_KEYSTORE_PASSWORD=tomcat123 \
-    SERVER_PORT=8443
+# Create SSL directory
+RUN mkdir -p /opt/tomcat/conf/ssl
 
-# ═════════════════════════════════════════════════════════════
-# PREPARAÇÃO DO TOMCAT
-# ═════════════════════════════════════════════════════════════
+# Copy SSL certificates (adjust these based on your actual files)
+COPY ssl_certs/fullchain.pem /opt/tomcat/conf/ssl/
+COPY ssl_certs/wildcard.key /opt/tomcat/conf/ssl/
+COPY ssl_certs/backend.p12 /opt/tomcat/conf/ssl/
 
-# Remover aplicações padrão do Tomcat (segurança)
-RUN rm -rf $CATALINA_HOME/webapps/* && \
-    mkdir -p $CATALINA_HOME/webapps/ROOT && \
-    mkdir -p $CATALINA_HOME/conf/ssl
+# Copy Tomcat configuration
+COPY server.xml /usr/local/tomcat/conf/
 
-# ═════════════════════════════════════════════════════════════
-# COPIAR CERTIFICADOS SSL
-# ═════════════════════════════════════════════════════════════
+# Copy the built WAR from build stage
+COPY --from=build /build/target/chamadaqr.war /usr/local/tomcat/webapps/chamadaqr.war
 
-# IMPORTANTE: Certificados devem estar em ./ssl_certs/ antes do build
-COPY ssl_certs/fullchain.pem $CATALINA_HOME/conf/ssl/
-COPY ssl_certs/wildcard.key $CATALINA_HOME/conf/ssl/
-
-# Ajustar permissões dos certificados
-RUN chmod 644 $CATALINA_HOME/conf/ssl/*.pem && \
-    chmod 644 $CATALINA_HOME/conf/ssl/*.key && \
-    chown -R root:root $CATALINA_HOME/conf/ssl
-
-# ═════════════════════════════════════════════════════════════
-# COPIAR CONFIGURAÇÕES CUSTOMIZADAS
-# ═════════════════════════════════════════════════════════════
-
-# Server.xml customizado com SSL Connector
-COPY server.xml $CATALINA_HOME/conf/server.xml
-
-# ═════════════════════════════════════════════════════════════
-# COPIAR WAR DO STAGE DE BUILD
-# ═════════════════════════════════════════════════════════════
-
-# Copiar como ROOT.war para contexto /chamadaqr
-COPY --from=build /build/target/chamadaqr.war $CATALINA_HOME/webapps/ROOT.war
-
-# Verificar se WAR foi copiado
-RUN ls -lh $CATALINA_HOME/webapps/ROOT.war && \
-    test -f $CATALINA_HOME/webapps/ROOT.war
-
-# ═════════════════════════════════════════════════════════════
-# SCRIPT DE INICIALIZAÇÃO
-# ═════════════════════════════════════════════════════════════
-
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
-# ═════════════════════════════════════════════════════════════
-# EXPOSIÇÃO DE PORTAS
-# ═════════════════════════════════════════════════════════════
-
-# Porta 8443 (HTTPS)
+# Expose HTTPS port
 EXPOSE 8443
 
-# ═════════════════════════════════════════════════════════════
-# HEALTH CHECK
-# ═════════════════════════════════════════════════════════════
-
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD curl --fail --insecure https://localhost:8443/chamadaqr/ || exit 1
-
-# ═════════════════════════════════════════════════════════════
-# ENTRYPOINT & CMD
-# ═════════════════════════════════════════════════════════════
-
-ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+# Start Tomcat
 CMD ["catalina.sh", "run"]
